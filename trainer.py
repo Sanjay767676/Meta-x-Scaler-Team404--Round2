@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from typing import Any, Callable
 
 from agents import coder_version_label, get_coder_code
@@ -433,15 +434,33 @@ def _on_episode_end(
     summary: dict[str, Any],
     memory: CoachMemory,
 ) -> None:
-    """
-    Called at end of every episode.
-
-    TODO: Plug in TRL PPOTrainer / Unsloth model updates here.
-    E.g.:
-        trainer.step(queries, responses, rewards)
-        model.save_pretrained(f"models/checkpoint-ep{episode}")
-    """
-    pass
+    """Export DPO data for real training loop."""
+    dpo_file = "data/dpo_dataset.jsonl"
+    os.makedirs("data", exist_ok=True)
+    
+    # Extract pairs from memory lessons for this episode
+    # Each lesson has 'extra' which contains 'candidate_rankings'
+    lessons = [l for l in memory.lessons if l.get("episode") == episode]
+    
+    with open(dpo_file, "a", encoding="utf-8") as f:
+        for lesson in lessons:
+            extra = lesson.get("extra", {})
+            rankings = extra.get("candidate_rankings", [])
+            if len(rankings) >= 2:
+                # Top is chosen, bottom is rejected
+                sorted_ranks = sorted(rankings, key=lambda x: x.get("pass_rate", 0), reverse=True)
+                chosen = sorted_ranks[0]
+                rejected = sorted_ranks[-1]
+                
+                # Only save if there is a meaningful difference
+                if chosen.get("pass_rate", 0) > rejected.get("pass_rate", 0):
+                    pair = {
+                        "prompt": lesson.get("observation", ""),
+                        "chosen": chosen.get("code", ""),
+                        "rejected": rejected.get("code", ""),
+                        "reward_margin": chosen.get("pass_rate", 0) - rejected.get("pass_rate", 0)
+                    }
+                    f.write(json.dumps(pair) + "\n")
 
 
 def _on_step_end(step: int, result: dict[str, Any]) -> None:

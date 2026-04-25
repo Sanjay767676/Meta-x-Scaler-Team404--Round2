@@ -11,9 +11,11 @@ This checklist ensures your project meets 100% of the judging criteria and submi
 - [x] **Memory Loop**: `CoachMemory` provides long-horizon "learning" signal.
 
 ## 2. Evidence of Improvement (20% of Score)
-- [x] **Run Final Comparison**: Completed. Run `py train_colab.py --compare --episodes 20` to regenerate if needed.
-- [x] **Verify Charts**: Verified. `outputs/pass_rate.png` and `outputs/reward_curve.png` show positive improvement.
-- [x] **Check Results Summary**: Verified. `outputs/README_RESULTS.md` provides a compelling narrative.
+- [x] **Adversarial Red-Teaming**: Red-vs-Blue loop in `env.py` and `agents.py`.
+- [x] **DPO Dataset Export**: `trainer.py` generates chosen/rejected code pairs.
+- [x] **Unsloth RL Training**: `train_unsloth.py` implements authentic post-training via DPO/GRPO.
+- [x] **Training Report**: `outputs/TRAINING_REPORT.md` documents the fine-tuning process.
+- [x] **Verify Charts**: `outputs/pass_rate.png` and `outputs/reward_curve.png` show real-time adaptation.
 
 ## 3. Submission Assets
 - [x] **Hugging Face Space**: Created and synced.
