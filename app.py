@@ -1,336 +1,159 @@
-# app.py
-# Main runner script for FORGE-v4.
-# Runs one demo episode with the improving_coder and tiered BreakerAgent,
-# then prints a structured results report.
+import os
+import json
+import gradio as gr
+import pandas as pd
+from typing import Any, Dict
 
-import sys
-
-from env import FORGEEnv
-from memory import CoachMemory
-from agents import get_coder_code, coder_version_label
-from logger import log_episode, update_summary, print_log_paths, write_episode_report
-from config import DEFAULT_CANDIDATES_PER_STEP, STEPS_PER_EPISODE, ensure_runtime_dirs
-from policies.factory import build_policy
 from trainer import run_benchmark_mode, run_compare_mode
+from memory import CoachMemory
+from metrics.charts import generate_charts
+from config import LOG_SUMMARY_FILE, REWARD_GRAPHS_DIR, OUTPUTS_DIR
 
+# Handle missing directories
+os.makedirs(REWARD_GRAPHS_DIR, exist_ok=True)
+os.makedirs(OUTPUTS_DIR, exist_ok=True)
 
-# ──────────────────────────────────────────────
-# Demo configuration
-# ──────────────────────────────────────────────
-DEFAULT_CODER_VERSION = "improving_coder"
-DEFAULT_POLICY = "heuristic"
+def get_current_metrics() -> Dict[str, Any]:
+    """Load latest metrics from summary.json if it exists."""
+    if os.path.exists(LOG_SUMMARY_FILE):
+        try:
+            with open(LOG_SUMMARY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
 
-
-def run_demo_episode(
-    coder_version: str = DEFAULT_CODER_VERSION,
-    policy_name: str = DEFAULT_POLICY,
-    candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
-    generate_metrics: bool = False,
-) -> None:
-    """
-    Execute one demo episode and print a rich results report.
-
-    Args:
-        coder_version: Which coder strategy to use.
-            "weak_coder_v1" | "weak_coder_v2" | "improving_coder"
-    """
-    _banner()
-
-    ensure_runtime_dirs()
+def get_memory_lessons() -> str:
+    """Get top lessons from CoachMemory."""
     memory = CoachMemory()
-    memory.clear()          # Start fresh for the demo run
-    env = FORGEEnv(memory=memory)
-    policy = build_policy(policy_name, strategy=coder_version)
-    state = env.reset()
-
-    episode = state["episode"]
-    print(f"\n{'─'*60}")
-    print(f"  Task ID  : {state['task_id']}")
-    print(f"  Episode  : {episode}")
-    print(f"  Coder    : {coder_version_label(coder_version, episode)}")
-    print(f"  Breaker  : {env.breaker.tier_name}  (starts here, tiers up during run)")
-    print(f"{'─'*60}")
-    print(f"\n  Problem:\n")
-    print(f"  {state['problem_description']}")
-    print()
-
-    # ── Accumulators ──────────────────────────────────────────────────────
-    ep_coder_rewards:   list[float] = []
-    ep_breaker_rewards: list[float] = []
-    ep_pass_rates:      list[float] = []
-    ep_fail_counts:     list[int]   = []
-    ep_error_counts:    list[int]   = []
-    ep_timeout_counts:  list[int]   = []
-    ep_break_rates:     list[float] = []
-
-    for step_num in range(1, STEPS_PER_EPISODE + 1):
-        # Build coder action
-        candidates = policy.generate_candidates(state, num_candidates=candidates_per_step)
-        candidate_solutions = [candidate.code for candidate in candidates if candidate.code.strip()]
-        fallback_code = get_coder_code(coder_version, episode=episode)
-        action = {
-            "coder_code": candidate_solutions[0] if candidate_solutions else fallback_code,
-            "candidate_solutions": candidate_solutions,
-            "coder_version": coder_version,
-        }
-
-        result = env.step(action)
-        state  = result["state"]
-
-        cr = result["coder_reward"]
-        br = result["breaker_reward"]
-        info = result["info"]
-
-        # Accumulate
-        ep_coder_rewards.append(cr["total_reward"])
-        ep_breaker_rewards.append(br["total_reward"])
-        ep_pass_rates.append(cr["pass_rate"])
-        ep_fail_counts.append(cr["fail_count"])
-        ep_error_counts.append(cr["error_count"])
-        ep_timeout_counts.append(cr.get("timeout_count", 0))
-        ep_break_rates.append(br["break_rate"])
-
-        # Per-step print
-        print(f"  ── Step {step_num}/{STEPS_PER_EPISODE}  [breaker: {info['breaker_tier_name']}]")
-        print(
-            f"     Coder   → pass_rate: {cr['pass_rate']:.2f}  "
-            f"| passes: {cr['pass_count']}  "
-            f"| fails: {cr['fail_count']}  "
-            f"| errors: {cr['error_count']}  "
-            f"| reward: {cr['total_reward']:+.2f}"
-        )
-        print(
-            f"     Breaker → break_rate: {br['break_rate']:.2f}  "
-            f"| breaks: {br['breaks']}  "
-            f"| no-break: {br['passes']}  "
-            f"| reward: {br['total_reward']:+.2f}"
-        )
-        rankings = info.get("candidate_rankings", [])
-        if rankings:
-            best = rankings[0]
-            print(
-                f"     Candidate ranking → count: {len(rankings)} | "
-                f"selected_idx: {info.get('selected_candidate_index', -1)} | "
-                f"best pass_rate: {best['pass_rate']:.2f} | "
-                f"best runtime_ms: {best['avg_runtime_ms']:.2f}"
-            )
-        if state.get("recent_breaker_case") is not None:
-            print(f"     Recent adversarial input: {state['recent_breaker_case']}")
-        print()
-
-        if result["done"]:
-            break
-
-    # ── Episode log ───────────────────────────────────────────────────────
-    def avg(lst: list) -> float:
-        return round(sum(lst) / len(lst), 4) if lst else 0.0
-
-    log_episode(
-        episode=episode,
-        coder_version=coder_version,
-        breaker_tier=env.breaker.current_tier,
-        avg_coder_reward=avg(ep_coder_rewards),
-        avg_breaker_reward=avg(ep_breaker_rewards),
-        avg_pass_rate=avg(ep_pass_rates),
-        total_fail_count=sum(ep_fail_counts),
-        total_error_count=sum(ep_error_counts),
-        total_timeout_count=sum(ep_timeout_counts),
-        avg_break_rate=avg(ep_break_rates),
-        steps=env.step_count,
-    )
-
-    update_summary(
-        total_episodes=1,
-        coder_version=coder_version,
-        final_breaker_tier=env.breaker.current_tier,
-        all_coder_rewards=ep_coder_rewards,
-        all_breaker_rewards=ep_breaker_rewards,
-        all_pass_rates=ep_pass_rates,
-        all_break_rates=ep_break_rates,
-        coach_memory_summary=memory.summary(),
-    )
-
-    write_episode_report(
-        episode=episode,
-        payload={
-            "episode": episode,
-            "coder_version": coder_version,
-            "policy": policy.name,
-            "avg_coder_reward": avg(ep_coder_rewards),
-            "avg_breaker_reward": avg(ep_breaker_rewards),
-            "avg_pass_rate": avg(ep_pass_rates),
-            "avg_break_rate": avg(ep_break_rates),
-            "total_fail_count": sum(ep_fail_counts),
-            "total_error_count": sum(ep_error_counts),
-            "total_timeout_count": sum(ep_timeout_counts),
-            "steps": env.step_count,
-        },
-    )
-
-    # ── Final report ──────────────────────────────────────────────────────
-    print(f"{'═'*60}")
-    print("  EPISODE SUMMARY")
-    print(f"{'═'*60}")
-    print(f"  Coder version       : {coder_version_label(coder_version, episode)}")
-    print(f"  Final breaker tier  : {env.breaker.tier_name}")
-    print(f"  Avg pass rate       : {avg(ep_pass_rates):.2f}")
-    print(f"  Avg coder reward    : {avg(ep_coder_rewards):+.4f}")
-    print(f"  Avg breaker reward  : {avg(ep_breaker_rewards):+.4f}")
-    print(f"  Total fail count    : {sum(ep_fail_counts)}")
-    print(f"  Total error count   : {sum(ep_error_counts)}")
-    print(f"  Avg break rate      : {avg(ep_break_rates):.2f}")
-    print()
-    print("  Coach memory summary:")
     summary = memory.summary()
-    print(f"    Lessons stored    : {summary.get('total_lessons', 0)}")
-    notes = summary.get("recent_coach_notes", [])
-    if notes:
-        print("    Recent coach notes:")
-        for note in notes:
-            print(f"      • {note}")
-    print()
-    print("  Log files updated:")
-    print_log_paths()
-    if generate_metrics:
-        from metrics import generate_charts
-        chart_paths = generate_charts()
-        if chart_paths:
-            print("  Charts generated:")
-            for key, path in chart_paths.items():
-                print(f"    - {key}: {path}")
-    print(f"{'═'*60}")
+    top_lessons = summary.get("top_lessons", [])
+    if not top_lessons:
+        return "No lessons recorded yet."
+    
+    output = ""
+    for idx, lesson in enumerate(top_lessons):
+        output += f"{idx+1}. Episode {lesson.get('episode')}: {lesson.get('coach_note')} (Weight: {lesson.get('reward_weight')})\n"
+    return output
 
-
-# ──────────────────────────────────────────────
-# Helpers
-# ──────────────────────────────────────────────
-
-def _banner() -> None:
-    print()
-    print("╔══════════════════════════════════════════════════════════╗")
-    print("║   FORGE-v4  |  Adversarial Code Generation Environment  ║")
-    print("╚══════════════════════════════════════════════════════════╝")
-
-
-def _print_help() -> None:
-    print("Usage: python app.py [OPTIONS]")
-    print()
-    print("Options:")
-    print("  --coder VERSION   Coder strategy to use:")
-    print("                      weak_coder_v1   (bubble sort — slow/weak)")
-    print("                      weak_coder_v2   (selection sort + abs() bug)")
-    print("                      improving_coder (adapts each episode)  [default]")
-    print("  --steps N         Override STEPS_PER_EPISODE for this run")
-    print("  --policy NAME     Defender policy: heuristic | api | local | mock | model")
-    print("  --candidates N    Candidate solutions to evaluate per step")
-    print("  --charts          Generate trend charts in outputs/")
-    print("  --benchmark N     Run benchmark mode for N episodes (minimum 20)")
-    print("  --compare         Run baseline heuristic vs model policy comparison")
-    print("  --help / -h       Show this message")
-
-
-# ──────────────────────────────────────────────
-# Entry point
-# ──────────────────────────────────────────────
-
-def main() -> None:
-    args = sys.argv[1:]
-
-    if "--help" in args or "-h" in args:
-        _print_help()
-        sys.exit(0)
-
-    coder_version = DEFAULT_CODER_VERSION
-    policy_name = DEFAULT_POLICY
-    candidates_per_step = DEFAULT_CANDIDATES_PER_STEP
-    if "--coder" in args:
-        idx = args.index("--coder")
-        try:
-            coder_version = args[idx + 1]
-            valid = ("weak_coder_v1", "weak_coder_v2", "improving_coder")
-            if coder_version not in valid:
-                print(f"Error: unknown coder version '{coder_version}'. Choose from: {valid}")
-                sys.exit(1)
-        except IndexError:
-            print("Error: --coder requires a version argument.")
-            sys.exit(1)
-
-    if "--steps" in args:
-        idx = args.index("--steps")
-        try:
-            import config
-            config.STEPS_PER_EPISODE = int(args[idx + 1])
-        except (IndexError, ValueError):
-            print("Error: --steps requires an integer argument.")
-            sys.exit(1)
-
-    if "--policy" in args:
-        idx = args.index("--policy")
-        try:
-            policy_name = args[idx + 1].strip().lower()
-            if policy_name not in ("heuristic", "api", "local", "mock", "model"):
-                raise ValueError(policy_name)
-        except (IndexError, ValueError):
-            print("Error: --policy must be one of: heuristic, api, local, mock, model.")
-            sys.exit(1)
-
-    if "--candidates" in args:
-        idx = args.index("--candidates")
-        try:
-            candidates_per_step = max(1, int(args[idx + 1]))
-        except (IndexError, ValueError):
-            print("Error: --candidates requires an integer >= 1.")
-            sys.exit(1)
-
-    if "--compare" in args:
-        report = run_compare_mode(
-            model_policy_name="model",
-            episodes=20,
-            candidates_per_step=candidates_per_step,
-            verbose=False,
-        )
-        print("Comparison complete")
-        print(f"  Pass-rate delta      : {report['improvement']['pass_rate_delta']:+.4f}")
-        print(f"  Defender reward delta: {report['improvement']['defender_reward_delta']:+.4f}")
-        print(f"  Adversary reward delta: {report['improvement']['adversary_reward_delta']:+.4f}")
-        print(f"  Tier Progression Delta: {report['improvement']['max_tier_delta']:+d}")
-        print("  Judge assets exported to outputs/")
-        sys.exit(0)
-
-    if "--benchmark" in args:
-        idx = args.index("--benchmark")
-        try:
-            benchmark_episodes = int(args[idx + 1])
-        except (IndexError, ValueError):
-            print("Error: --benchmark requires an integer argument.")
-            sys.exit(1)
-
-        report = run_benchmark_mode(
-            policy_name=policy_name,
-            episodes=benchmark_episodes,
-            candidates_per_step=candidates_per_step,
-            verbose=False,
-        )
-        print("Benchmark complete")
-        print(f"  Episodes: {report['episodes']}")
-        for row in report.get("rows", []):
-            print(
-                f"  Ep {row['episode']:>3} | pass={row['pass_rate']:.2f} "
-                f"| defender={row['defender_reward']:+.2f} "
-                f"| adversary={row['adversary_reward']:+.2f} "
-                f"| rank={row['chosen_candidate_rank']} "
-                f"| tier={row['tier_progression']}"
-            )
-        print("  Judge assets exported to outputs/")
-        sys.exit(0)
-
-    run_demo_episode(
-        coder_version=coder_version,
-        policy_name=policy_name,
-        candidates_per_step=candidates_per_step,
-        generate_metrics=("--charts" in args),
+def run_benchmark_ui(episodes):
+    """Gradio wrapper for benchmark mode."""
+    # Limit episodes for demo stability on CPU
+    ep_count = min(int(episodes), 5) 
+    report = run_benchmark_mode(policy_name="model", episodes=ep_count, verbose=False)
+    
+    summary = report.get("summary", {})
+    generate_charts() # Update trends too
+    lessons = get_memory_lessons()
+    
+    # Paths for Gradio (as requested by user)
+    reward_path = os.path.join(OUTPUTS_DIR, "reward_curve.png")
+    pass_rate_path = os.path.join(OUTPUTS_DIR, "pass_rate.png")
+    
+    return (
+        f"{summary.get('avg_pass_rate', 0.0):.2f}",
+        f"{summary.get('avg_defender_reward', 0.0):+.2f}",
+        f"{summary.get('avg_adversary_reward', 0.0):+.2f}",
+        f"{summary.get('max_tier', 1)}",
+        reward_path if os.path.exists(reward_path) else None,
+        pass_rate_path if os.path.exists(pass_rate_path) else None,
+        lessons
     )
 
+def run_compare_ui(episodes):
+    """Gradio wrapper for compare mode."""
+    ep_count = min(int(episodes), 3) # Very small for demo
+    report = run_compare_mode(model_policy_name="model", episodes=ep_count, verbose=False)
+    
+    model_summary = report.get("model", {})
+    generate_charts()
+    lessons = get_memory_lessons()
+    
+    # Paths for Gradio (as requested by user)
+    reward_path = os.path.join(OUTPUTS_DIR, "reward_curve.png")
+    pass_rate_path = os.path.join(OUTPUTS_DIR, "pass_rate.png")
+    
+    return (
+        f"{model_summary.get('avg_pass_rate', 0.0):.2f}",
+        f"{model_summary.get('avg_defender_reward', 0.0):+.2f}",
+        f"{model_summary.get('avg_adversary_reward', 0.0):+.2f}",
+        f"{model_summary.get('max_tier', 1)}",
+        reward_path if os.path.exists(reward_path) else None,
+        pass_rate_path if os.path.exists(pass_rate_path) else None,
+        lessons
+    )
+
+# --- Gradio UI Layout ---
+
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    gr.Markdown("# FORGE-v4: Adversarial Robust Code Generation Environment")
+    
+    # Pre-load data
+    initial_lessons = get_memory_lessons()
+    initial_reward = os.path.join(OUTPUTS_DIR, "reward_curve.png")
+    initial_pass = os.path.join(OUTPUTS_DIR, "pass_rate.png")
+    
+    with gr.Tab("1. Project Summary"):
+        gr.Markdown("""
+        ### Adversarial Code-Generation Benchmarking
+        FORGE-v4 is an environment for training and evaluating code-generation models against adversarial pressure.
+        
+        **Key Features:**
+        - **Two-Agent Interaction**: Defender (Coder) vs. Adversary (Breaker).
+        - **Tiered Red-Teaming**: The Breaker escalates difficulty (negatives, duplicates, large arrays) as the Defender improves.
+        - **CoachMemory Feedback**: Models learn from past failures to generate more robust solutions.
+        - **OpenEnv Compliant**: Standardized API for LLM agent integration.
+        """)
+        
+    with gr.Tab("2. Training & Evaluation"):
+        with gr.Row():
+            episodes_input = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Episodes (Limited for Demo)")
+        
+        with gr.Row():
+            btn_benchmark = gr.Button("Run Model Benchmark", variant="primary")
+            btn_compare = gr.Button("Compare Baseline vs Model", variant="secondary")
+            
+        gr.Markdown("### Latest Evaluation Results")
+        with gr.Row():
+            m_pass = gr.Textbox(label="Pass Rate", placeholder="0.00")
+            m_def_reward = gr.Textbox(label="Defender Reward", placeholder="+0.0")
+            m_adv_reward = gr.Textbox(label="Adversary Reward", placeholder="+0.0")
+            m_tier = gr.Textbox(label="Max Tier Reached", placeholder="1")
+            
+        with gr.Row():
+            with gr.Column():
+                gr.Markdown("#### Reward Trend")
+                plot_reward = gr.Image(value=initial_reward if os.path.exists(initial_reward) else None, label="Reward Curve", type="filepath")
+            with gr.Column():
+                gr.Markdown("#### Pass Rate Trend")
+                plot_pass = gr.Image(value=initial_pass if os.path.exists(initial_pass) else None, label="Pass Rate Curve", type="filepath")
+                
+        gr.Markdown("### Coach Memory: Top Lessons Learned")
+        memory_output = gr.Textbox(value=initial_lessons, lines=5, label="Strategic Improvements", placeholder="Run training to see lessons...")
+
+    with gr.Tab("3. API Endpoints"):
+        gr.Markdown("""
+        ### OpenEnv API Standard
+        FORGE-v4 exposes a FastAPI server (available at `:8000` when running locally) with the following endpoints:
+        
+        - **`POST /reset`**: Initializes a new episode and returns the problem description.
+        - **`POST /step`**: Receives code candidates, evaluates them, and returns rewards/diagnostics.
+        - **`GET /state`**: Returns current environment status and memory summary.
+        
+        These endpoints allow external agents to interface with FORGE-v4 programmatically.
+        """)
+
+    # Event handlers
+    btn_benchmark.click(
+        run_benchmark_ui, 
+        inputs=[episodes_input], 
+        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output]
+    )
+    btn_compare.click(
+        run_compare_ui, 
+        inputs=[episodes_input], 
+        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output]
+    )
 
 if __name__ == "__main__":
-    main()
+    demo.launch(server_name="0.0.0.0", server_port=7860)

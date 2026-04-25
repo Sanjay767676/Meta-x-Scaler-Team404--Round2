@@ -14,8 +14,16 @@ This checklist ensures your project meets 100% of the judging criteria and submi
 - [ ] **Check Results Summary**: Review `outputs/README_RESULTS.md` for a strong narrative.
 
 ## 3. Submission Assets
-- [ ] **Hugging Face Space**: Create a new Space and upload the repository content.
+- [x] **Hugging Face Space**: Created a new Space and uploaded the repository content.
+- [x] **Gradio Demo**: `app.py` provides a professional judge-facing UI.
+- [x] **Auto-Deploy**: GitHub Actions workflow `.github/workflows/deploy_hf_space.yml` implemented.
 - [ ] **Environment API URL**: Provide the URL to your running FastAPI server (or local host instruction if allowed).
+
+## 4. Final Submission Steps
+1. **Sync to GitHub**: `git push origin main`.
+2. **Verify Space**: Check Hugging Face Space for successful deployment and interactive charts.
+3. **Record Video**: 3-minute demo showing the Gradio UI and learning delta.
+4. **Submit**: Fill out the Devpost form with GitHub and HF links.
 - [ ] **Mini-Blog / Video (<3 mins)**: **CRITICAL**. Record a video showing:
     - The adversarial loop in action.
     - How the model fails on a Tier 3 attack (e.g., negative values).

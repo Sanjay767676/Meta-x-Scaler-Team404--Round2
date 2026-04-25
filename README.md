@@ -57,9 +57,14 @@ broader programming tasks.
 pip install -r requirements.txt
 ```
 
-2. Run a demo episode
+2. Run the Interactive Gradio Demo (Recommended)
 ```bash
 python app.py
+```
+
+3. Run the CLI Demo (Legacy)
+```bash
+python cli_demo.py
 ```
 
 3. Run Colab-optimized Training (Benchmark + Compare)

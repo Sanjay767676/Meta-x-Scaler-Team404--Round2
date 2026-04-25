@@ -1,0 +1,40 @@
+name: Sync to Hugging Face Space
+
+# SETUP INSTRUCTIONS:
+# 1. Go to your GitHub repository -> Settings -> Secrets and variables -> Actions
+# 2. Click "New repository secret"
+# 3. Name: HF_TOKEN
+# 4. Value: Paste your Hugging Face Write Token
+# 5. Ensure the 'git remote add' URL below matches your Space URL.
+
+on:
+  push:
+    branches: [ main ]
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          # setup git
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Add Hugging Face Space as a remote
+          # REPLACE 'username/space-name' with your actual HF Space identifier
+          # Example: git remote add hf https://huggingface.co/spaces/Sanjay767676/FORGE-v4
+          git remote add hf https://huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2
+          
+          # Force push to Hugging Face
+          git push --force https://Sanjay767676:$HF_TOKEN@huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2 main
