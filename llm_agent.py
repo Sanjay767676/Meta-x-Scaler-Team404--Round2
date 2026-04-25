@@ -168,18 +168,81 @@ class OpenRouterProvider(BaseLLMProvider):
             return fallback
 
 
+class HuggingFaceAPIProvider(BaseLLMProvider):
+    """Hugging Face Inference API provider."""
+
+    name = "hf_api"
+
+    def __init__(self, api_key: str = "", model_id: str = "qwen/Qwen2.5-Coder-7B-Instruct"):
+        self.api_key = api_key or os.getenv("HF_TOKEN", "")
+        self.model_id = model_id
+
+    def generate(self, prompt: str, system_prompt: str = "") -> LLMResponse:
+        if not self.api_key:
+            return MockFallbackProvider().generate(prompt=prompt, system_prompt=system_prompt)
+
+        try:
+            import requests  # type: ignore
+
+            headers = {"Authorization": f"Bearer {self.api_key}"}
+            api_url = f"https://api-inference.huggingface.co/models/{self.model_id}"
+            
+            # Simple prompt formatting for instruction models
+            full_prompt = f"<|im_start|>system\n{system_prompt or 'You are a Python coding model.'}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+            
+            payload = {
+                "inputs": full_prompt,
+                "parameters": {"max_new_tokens": 512, "temperature": 0.2},
+            }
+            
+            response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            # HF API returns list of results
+            content = data[0].get("generated_text", "") if isinstance(data, list) else data.get("generated_text", "")
+            
+            # Strip the prompt if the model returns it
+            if content.startswith(full_prompt):
+                content = content[len(full_prompt):].strip()
+            
+            return LLMResponse(
+                provider=self.name,
+                model=self.model_id,
+                content=content.strip(),
+                raw={"status": "ok", "api_url": api_url},
+            )
+        except Exception as exc:  # noqa: BLE001
+            fallback = MockFallbackProvider().generate(prompt=prompt, system_prompt=system_prompt)
+            fallback.raw["hf_api_error"] = f"{type(exc).__name__}: {exc}"
+            return fallback
+
+
 def get_provider(provider_name: str = LLM_PROVIDER) -> BaseLLMProvider:
     """Factory for active provider."""
     name = (provider_name or "").strip().lower()
     if name == "openrouter":
         return OpenRouterProvider()
+    if name in ("hf_api", "huggingface_api"):
+        return HuggingFaceAPIProvider()
     if name in ("huggingface_local", "hf_local", "local"):
         return HuggingFaceLocalProvider()
     return MockFallbackProvider()
+
+
+def extract_python_code(text: str) -> str:
+    """Extract code block between triple backticks if present, else return whole text."""
+    if not text:
+        return ""
+    if "```python" in text:
+        return text.split("```python")[1].split("```")[0].strip()
+    if "```" in text:
+        return text.split("```")[1].split("```")[0].strip()
+    return text.strip()
 
 
 def generate_code(prompt: str, system_prompt: str = "") -> str:
     """Convenience API for future trainer/env integration."""
     provider = get_provider()
     response = provider.generate(prompt=prompt, system_prompt=system_prompt)
-    return response.content
+    return extract_python_code(response.content)

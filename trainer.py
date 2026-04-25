@@ -7,7 +7,7 @@ import os
 from typing import Any, Callable
 
 from agents import coder_version_label, get_coder_code
-from config import CHECKPOINT_FILE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, STEPS_PER_EPISODE, ensure_runtime_dirs
+from config import CHECKPOINT_FILE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, STEPS_PER_EPISODE, LLM_PROVIDER, ensure_runtime_dirs
 from env import FORGEEnv
 from logger import log_episode, update_summary, write_episode_report
 from metrics.charts import export_judge_assets
@@ -369,7 +369,7 @@ def _write_readme_results(report: dict[str, Any]) -> None:
     content = f"""# FORGE-v4 Benchmark Results
 
 ## 1. Executive Summary
-The FORGE-v4 benchmark evaluated the robustness of the **{report.get('model_policy')}** against an adversarial **Breaker** agent.
+The FORGE-v4 benchmark evaluated the robustness of the **{report.get('model_policy')}** (Provider: {LLM_PROVIDER}) against an adversarial **Breaker** agent.
 
 | Metric | Baseline (Heuristic) | Model Policy | Improvement |
 | :--- | :--- | :--- | :--- |

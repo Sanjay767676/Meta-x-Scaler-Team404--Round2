@@ -27,8 +27,9 @@ def build_policy(name: str, strategy: str = "improving_coder", memory: CoachMemo
     if normalized == "model":
         from config import LLM_PROVIDER
 
-        if LLM_PROVIDER == "openrouter":
-            return APIModelPolicy(provider_name="openrouter")
+        if LLM_PROVIDER in ("openrouter", "hf_api", "huggingface_api"):
+            provider_name = "hf_api" if "hf" in LLM_PROVIDER else "openrouter"
+            return APIModelPolicy(provider_name=provider_name)
         if LLM_PROVIDER in ("huggingface_local", "hf_local", "local"):
             return LocalModelPolicy()
         return MockModelPolicy(memory=memory)

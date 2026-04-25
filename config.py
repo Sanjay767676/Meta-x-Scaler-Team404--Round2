@@ -77,11 +77,12 @@ DEFAULT_CANDIDATES_PER_STEP = 3
 GLOBAL_RANDOM_SEED = 42
 
 # LLM provider configuration (future-ready)
-LLM_PROVIDER = "mock"  # mock | openrouter | huggingface_local
+LLM_PROVIDER = "mock"  # mock | openrouter | hf_api | huggingface_local
 LLM_MODEL = "qwen/qwen2.5-coder-0.5b-instruct"
 HF_LOCAL_MODEL_ID = "qwen/qwen2.5-coder-0.5b-instruct"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = ""
+OPENROUTER_API_KEY = "" # Or set OPENROUTER_API_KEY env var
+HF_TOKEN = ""           # Or set HF_TOKEN env var
 
 
 def ensure_runtime_dirs() -> None:

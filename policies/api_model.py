@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm_agent import get_provider
+from llm_agent import extract_python_code, get_provider
 from policies.base import CodeCandidate, CoderPolicy
 
 
@@ -26,7 +26,7 @@ class APIModelPolicy(CoderPolicy):
         candidates: list[CodeCandidate] = []
         for idx in range(max(1, num_candidates)):
             response = self.provider.generate(prompt=prompt, system_prompt=system_prompt)
-            code = response.content.strip()
+            code = extract_python_code(response.content)
             if not code:
                 continue
             candidates.append(
