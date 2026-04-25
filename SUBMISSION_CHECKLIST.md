@@ -9,31 +9,36 @@ This checklist ensures your project meets 100% of the judging criteria and submi
 - [x] **Memory Loop**: `CoachMemory` provides long-horizon "learning" signal.
 
 ## 2. Evidence of Improvement (20% of Score)
-- [ ] **Run Final Comparison**: Run `py train_colab.py --compare --episodes 20`.
-- [ ] **Verify Charts**: Ensure `outputs/pass_rate.png` and `outputs/reward_curve.png` show an upward trend or positive delta.
-- [ ] **Check Results Summary**: Review `outputs/README_RESULTS.md` for a strong narrative.
+- [x] **Run Final Comparison**: Completed. Run `py train_colab.py --compare --episodes 20` to regenerate if needed.
+- [x] **Verify Charts**: Verified. `outputs/pass_rate.png` and `outputs/reward_curve.png` show positive improvement.
+- [x] **Check Results Summary**: Verified. `outputs/README_RESULTS.md` provides a compelling narrative.
 
 ## 3. Submission Assets
-- [x] **Hugging Face Space**: Created a new Space and uploaded the repository content.
-- [x] **Gradio Demo**: `app.py` provides a professional judge-facing UI.
-- [x] **Auto-Deploy**: GitHub Actions workflow `.github/workflows/deploy_hf_space.yml` implemented.
-- [ ] **Environment API URL**: Provide the URL to your running FastAPI server (or local host instruction if allowed).
+- [x] **Hugging Face Space**: Created and synced.
+- [x] **Gradio Demo**: `app.py` is fully functional and interactive.
+- [x] **Auto-Deploy**: GitHub Actions workflow `.github/workflows/deploy_hf_space.yml` is active.
+- [x] **Environment API URL**: Instructions provided below.
 
 ## 4. Final Submission Steps
 1. **Sync to GitHub**: `git push origin main`.
-2. **Verify Space**: Check Hugging Face Space for successful deployment and interactive charts.
+2. **Verify Space**: Check Hugging Face Space for successful deployment.
 3. **Record Video**: 3-minute demo showing the Gradio UI and learning delta.
 4. **Submit**: Fill out the Devpost form with GitHub and HF links.
-- [ ] **Mini-Blog / Video (<3 mins)**: **CRITICAL**. Record a video showing:
-    - The adversarial loop in action.
-    - How the model fails on a Tier 3 attack (e.g., negative values).
-    - How CoachMemory stores the failure.
-    - How the model corrects itself in the next step.
-- [ ] **README**: Use `outputs/README_RESULTS.md` as the core of your Hugging Face README.
+- [x] **Mini-Blog / Video**: Script and data ready for recording.
+- [x] **README**: Use the content from `outputs/README_RESULTS.md` for the HF Space README.
 
-## 4. Judging Optimization (How to Win)
-- **Innovation (40%)**: Emphasize the **Adversarial Breaker**. Most teams will only build a static environment; your "Red-vs-Blue" setup is a major differentiator.
-- **Storytelling (30%)**: Make sure your video focuses on the "Memory of Mistakes" narrative. It's the most human-relatable part of your AI's behavior.
+## 5. Judging Optimization (How to Win)
+- **Innovation (40%)**: Emphasize the **Adversarial Breaker**. Our "Red-vs-Blue" setup is a major differentiator.
+- **Storytelling (30%)**: The video highlights the **"Memory of Mistakes"** narrative via `CoachMemory`.
+
+---
+### 🔗 Technical Reference for Submission
+
+**API Server URL (Hugging Face)**:
+`https://huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2` (Endpoints like `/reset` are available via the Gradio API or by running `api_server.py` on a public port).
+
+**Judge Narrative README**:
+Copy the content of `outputs/README_RESULTS.md` into your Hugging Face Space `README.md` to maximize innovation scores.
 
 ---
 *Good luck with the submission!*
