@@ -210,31 +210,49 @@ class BreakerAgent:
     def __init__(self) -> None:
         self.current_tier: int = 1
         self._recent_break_rates: list[float] = []
+        self._robustness_streak: int = 0
 
-    def update_tier(self, break_rate: float, episode: int) -> None:
+    def update_tier(self, break_rate: float, coder_pass_rate: float, episode: int) -> None:
         """
         Update the current tier based on recent performance and episode count.
-
-        Args:
-            break_rate: Breaker's break_rate from the last step.
-            episode:    Current episode number.
+        
+        Escalation occurs if:
+        1. Breaker is successful (break_rate >= 0.1)
+        2. Coder is too robust for current tier (pass_rate >= 0.9 for a streak)
+        3. Scheduled escalation (episode count)
         """
         self._recent_break_rates.append(break_rate)
-        # Use rolling window of last 3 steps to smooth noise
+        
+        if coder_pass_rate >= 0.9:
+            self._robustness_streak += 1
+        else:
+            self._robustness_streak = 0
+
+        # Rolling window for breaker success
         recent = self._recent_break_rates[-3:]
         avg_break = sum(recent) / len(recent)
 
-        if self.current_tier == 1 and avg_break >= BREAKER_TIER_UNLOCK_RATE:
-            self.current_tier = 2
+        # Progression logic
+        new_tier = self.current_tier
 
-        if self.current_tier == 2 and (
-            avg_break >= BREAKER_TIER_UNLOCK_RATE
-            and episode >= BREAKER_TIER3_MIN_EPISODE
-        ):
-            self.current_tier = 3
+        # Tier 1 -> 2
+        if new_tier == 1:
+            if avg_break >= 0.1 or self._robustness_streak >= 2 or episode >= 3:
+                new_tier = 2
 
-        if self.current_tier == 3 and episode >= BREAKER_TIER4_MIN_EPISODE:
-            self.current_tier = 4
+        # Tier 2 -> 3
+        elif new_tier == 2:
+            if avg_break >= 0.1 or self._robustness_streak >= 3 or episode >= 7:
+                new_tier = 3
+
+        # Tier 3 -> 4
+        elif new_tier == 3:
+            if avg_break >= 0.1 or self._robustness_streak >= 3 or episode >= 12:
+                new_tier = 4
+
+        if new_tier > self.current_tier:
+            self.current_tier = new_tier
+            self._robustness_streak = 0 # Reset streak for new tier
 
     def get_tests(self, n_per_tier: int = 2) -> list[dict[str, Any]]:
         """

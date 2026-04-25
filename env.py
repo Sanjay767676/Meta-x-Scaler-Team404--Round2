@@ -211,7 +211,7 @@ class FORGEEnv:
         )
 
         # ── 6. Advance breaker tier ────────────────────────────────────────
-        self.breaker.update_tier(breaker_info["break_rate"], self.episode)
+        self.breaker.update_tier(breaker_info["break_rate"], coder_info["pass_rate"], self.episode)
 
         # ── 7. Check done + return ────────────────────────────────────────
         if self.step_count >= STEPS_PER_EPISODE:

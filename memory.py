@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -137,10 +138,21 @@ class CoachMemory:
 
     def save(self) -> None:
         """Persist lessons to JSON file."""
-        tmp_path = f"{self.filepath}.tmp"
-        with open(tmp_path, "w", encoding="utf-8") as f:
-            json.dump(self.lessons, f, indent=2)
-        os.replace(tmp_path, self.filepath)
+        try:
+            with open(self.filepath, "w", encoding="utf-8") as f:
+                json.dump(self.lessons, f, indent=2)
+        except (IOError, PermissionError):
+            # Fallback for Windows file locks
+            tmp_path = f"{self.filepath}.{uuid.uuid4().hex[:6]}.tmp"
+            try:
+                with open(tmp_path, "w", encoding="utf-8") as f:
+                    json.dump(self.lessons, f, indent=2)
+                import os
+                if os.path.exists(self.filepath):
+                    os.remove(self.filepath)
+                os.rename(tmp_path, self.filepath)
+            except:
+                pass # Silently fail if even fallback fails to avoid crashing training
 
     def load(self) -> None:
         """Load lessons from JSON file if it exists."""

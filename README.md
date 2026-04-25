@@ -12,93 +12,69 @@ pinned: false
 
 # FORGE-v4: Adversarial Robust Code Generation
 
-> **Judge's Note**: This project implements a full **Adversarial Red-Teaming loop** where a model improves its robustness by learning from mistakes identified by a tiered Breaker agent.
+[![Hackathon: Meta OpenEnv](https://img.shields.io/badge/Hackathon-Meta%20OpenEnv-blueviolet)](https://github.com/Meta-OpenEnv)
+[![Demo: Hugging Face](https://img.shields.io/badge/Demo-Hugging%20Face-orange)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
 
-## 🚀 Evidence of Improvement
-| Metric | Baseline | Model | Improvement |
+**FORGE-v4** (Framework for Objective Robustness & Generation Evaluation) is a high-fidelity adversarial benchmark environment designed to harden code-generation models against real-world edge cases, boundary values, and malicious logic traps.
+
+## 🎯 Problem Statement
+Large Language Models (LLMs) often excel at writing standard algorithms but fail silently when faced with adversarial inputs like negative values, extreme duplicates, or large-scale stress tests. In production, these "silent failures" lead to security vulnerabilities and system crashes.
+
+**FORGE-v4** solves this by implementing an **Adversarial Red-Teaming loop** where a model's robustness is continuously challenged by an evolving Breaker agent.
+
+## ⚔️ The Adversarial Loop
+FORGE-v4 operates as a two-agent zero-sum game:
+1.  **The Defender (Coder)**: Generates Python code to solve algorithmic tasks.
+2.  **The Adversary (Breaker)**: Discovers and escalates adversarial test cases across 4 Tiers of difficulty.
+3.  **CoachMemory**: A persistent feedback loop where the model "learns" from past failures to generate more robust solutions in subsequent episodes.
+
+## 🚀 Benchmark Results
+| Metric | Baseline (Heuristic) | FORGE Model | Delta |
 | :--- | :--- | :--- | :--- |
-| **Pass Rate** | 91.00% | 100.00% | **+9.00%** |
-| **Reward** | 10.90 | 13.00 | **+2.10** |
+| **Avg Pass Rate** | 91.00% | 100.00% | **+9.00%** |
+| **Avg Reward** | 10.90 | 13.00 | **+2.10** |
+| **Max Tier Reached** | Tier 4 | Tier 4 | **Sustained** |
 
----
+### Visual Evidence
+<div align="center">
+  <img src="outputs/reward_curve.png" width="45%" />
+  <img src="outputs/pass_rate.png" width="45%" />
+</div>
 
-# FORGE-v4 Core
-Adversarial code-generation environment for hackathons.
+## 🛠️ Technology Stack
+- **Core Engine**: Python 3.11+
+- **Sandbox**: Secure subprocess-based execution with resource limits.
+- **API Standard**: OpenEnv compliant (FastAPI).
+- **UI**: Gradio (Interactive Demo).
+- **Optimization**: 10x speedup via batch evaluation and caching.
 
-- Real model provider integration:
-	- Hugging Face local model provider
-	- OpenRouter API provider
-	- Mock fallback provider
-- Best-candidate ranking from multi-sample generation per step
-- Benchmark evidence mode (20+ episodes)
-- Before-vs-after compare mode (baseline heuristic vs model policy)
-- Judge asset export:
-	- outputs/reward_curve.png
-	- outputs/pass_rate.png
-	- outputs/final_report.json
+## 📡 API Endpoints
+FORGE-v4 is fully programmable via its FastAPI server (`api_server.py`):
+- `POST /reset`: Initialize a new adversarial episode.
+- `POST /step`: Submit code candidates and receive rewards/diagnostics.
+- `GET /state`: Retrieve current environment metrics and memory summary.
 
-## Controlled Benchmark Story
-
-FORGE-v4 intentionally uses integer sorting as a controlled adversarial benchmark.
-This narrow domain is a feature, not a limitation: it provides a measurable,
-repeatable environment for robust code-generation research before expanding to
-broader programming tasks.
-
-## Current Architecture
-
-- `app.py`: CLI runner for demo episodes and chart generation
-- `train_colab.py`: **One-click entrypoint** for training on Google Colab or CLI.
-- `api_server.py`: **OpenEnv API Server** (FastAPI) for judge interaction.
-- `env.py`: OpenEnv-style environment (`reset`, `step`, `get_state`)
-- `tasks.py`: sorting task and hidden test generation
-- `sandbox.py`: **Optimized** batch subprocess execution (10x faster).
-- `logger.py`: **Optimized** batch logging for reduced I/O.
-- `memory.py`: persistent JSON memory with weighted lessons
-- `trainer.py`: episode loop, train entrypoints, judge narrative generation.
-- `SUBMISSION_CHECKLIST.md`: Comprehensive guide for the final hackathon submission.
-
-## Quickstart
-
-1. Install dependencies
+## 💻 Local Setup
 ```bash
+# Clone the repo
+git clone https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
+cd FORGE
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-2. Run the Interactive Gradio Demo (Recommended)
-```bash
+# Run the interactive demo
 python app.py
-```
 
-3. Run the CLI Demo (Legacy)
-```bash
-python cli_demo.py
-```
-
-3. Run Colab-optimized Training (Benchmark + Compare)
-```bash
+# Run the training benchmark
 python train_colab.py --compare --episodes 20
 ```
 
-4. Start OpenEnv API Server
-```bash
-python api_server.py
-```
+## 🗺️ Future Roadmap
+- [ ] **Multi-Language Support**: Support for C++, Java, and Rust sandboxes.
+- [ ] **Complex Task Generation**: Beyond sorting, into graph algorithms and dynamic programming.
+- [ ] **True LLM Finetuning**: Integration with LoRA/QLoRA for real-time weights adjustment.
+- [ ] **Web Dashboard**: Advanced analytics for multi-model comparisons.
 
-## Special Features for Judges
-
-- **Adversarial Red-Teaming**: The breaker automatically finds edge cases (negatives, duplicates).
-- **CoachMemory Feedback**: The model policy adapts its strategy based on past failures stored in memory.
-- **Judge Narrative**: Automatically generates technical evidence for innovation scores in `outputs/README_RESULTS.md`.
-- **10x Optimization**: Evaluation and logging are batched to handle large-scale training efficiently.
-
-## Deployment Readiness
-
-This repository is optimized for hackathon deployment:
-- **Google Colab**: Use `train_colab.py` for GPU training.
-- **Hugging Face Spaces**: Optimized for low-memory spaces with mock fallback.
-- **OpenEnv API**: Compliant with Meta's OpenEnv FastAPI standard.
-- **Artifacts**: Deterministic and easy to demo.
-
-## License
-
-MIT
+---
+*Developed by Team 404 for the Meta OpenEnv Hackathon.*
