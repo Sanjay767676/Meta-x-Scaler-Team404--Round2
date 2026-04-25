@@ -1,17 +1,17 @@
 {
   "avg_break_rate": 0.0,
-  "avg_breaker_reward": -10.185,
+  "avg_breaker_reward": -7.44,
   "avg_coder_reward": 13.0,
   "avg_pass_rate": 1.0,
   "best_coder_reward": 13.0,
   "coach_memory_summary": {
-    "avg_breaker_reward": -3.4684,
-    "avg_coder_reward": 11.5155,
+    "avg_breaker_reward": -3.3663,
+    "avg_coder_reward": 11.5815,
     "episodes_seen": 20,
     "recent_coach_notes": [
-      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
-      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
-      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier"
+      "Episode 5: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
+      "Episode 5: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
+      "Episode 5: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier"
     ],
     "top_lessons": [
       {
@@ -31,11 +31,11 @@
       }
     ],
     "total_lessons": 1000,
-    "weighted_signal": 277730.9475
+    "weighted_signal": 278999.2725
   },
   "coder_version": "mock",
   "final_breaker_tier": 4,
-  "generated_at": "2026-04-25T15:17:36.669674",
-  "total_episodes": 20,
+  "generated_at": "2026-04-25T18:47:05.179293",
+  "total_episodes": 5,
   "worst_coder_reward": 13.0
 }

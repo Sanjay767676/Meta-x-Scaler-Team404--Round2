@@ -439,32 +439,44 @@ def _on_episode_end(
     os.makedirs("data", exist_ok=True)
     count = 0
     
-    # Extract pairs from memory lessons for this episode
-    # Each lesson has 'extra' which contains 'candidate_rankings'
-    lessons = [l for l in memory.lessons if l.get("episode") == episode]
+    # 1. Gather all lessons for this specific episode
+    # Note: Filter by agent='env' to ensure we get the step summaries
+    lessons = [l for l in memory.lessons if l.get("episode") == episode and l.get("agent") == "env"]
     
+    # 2. Append new pairs
     with open(dpo_file, "a", encoding="utf-8") as f:
         for lesson in lessons:
             extra = lesson.get("extra", {})
             rankings = extra.get("candidate_rankings", [])
+            
+            # We need at least 2 candidates to form a preference pair
             if len(rankings) >= 2:
-                # Top is chosen, bottom is rejected
-                sorted_ranks = sorted(rankings, key=lambda x: x.get("pass_rate", 0), reverse=True)
+                # evaluate_candidates already provides them ranked by composite_score
+                # But let's be explicitly sure we get best vs worst
+                sorted_ranks = sorted(rankings, key=lambda x: x.get("composite_score", 0), reverse=True)
                 chosen = sorted_ranks[0]
                 rejected = sorted_ranks[-1]
                 
-                # Only save if there is a meaningful difference
-                if chosen.get("pass_rate", 0) > rejected.get("pass_rate", 0):
+                # Check for meaningful difference and presence of code
+                chosen_code = chosen.get("code", "")
+                rejected_code = rejected.get("code", "")
+                
+                if chosen_code and rejected_code and chosen.get("composite_score", 0) > rejected.get("composite_score", 0):
                     pair = {
-                        "prompt": extra.get("problem_description", ""),
-                        "chosen": chosen.get("code", ""),
-                        "rejected": rejected.get("code", ""),
-                        "reward_margin": chosen.get("pass_rate", 0) - rejected.get("pass_rate", 0)
+                        "prompt": extra.get("problem_description", "Sort this list."),
+                        "chosen": chosen_code,
+                        "rejected": rejected_code,
+                        "reward_margin": round(float(chosen.get("composite_score", 0)) - float(rejected.get("composite_score", 0)), 4)
                     }
                     f.write(json.dumps(pair) + "\n")
                     count += 1
+    
     if count > 0:
-        print(f"  [DPO] Exported {count} real preference pairs to {dpo_file}")
+        print(f"  [DPO] Exported {count} preference pairs from episode {episode} to {dpo_file}")
+    elif episode % 5 == 0:
+        # Debug hint every 5 episodes if empty
+        policy_name = summary.get("coder_version", "unknown")
+        print(f"  [DPO] No pairs exported for episode {episode} (Policy: {policy_name}, Lessons checked: {len(lessons)})")
 
 
 def _on_step_end(step: int, result: dict[str, Any]) -> None:

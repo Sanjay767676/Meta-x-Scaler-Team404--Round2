@@ -103,6 +103,7 @@ def evaluate_candidates(candidates: list[str], tests: list[dict[str, Any]]) -> d
         "rankings": [
             {
                 "index": item.index,
+                "code": item.code,
                 "pass_count": item.pass_count,
                 "total_tests": item.total_tests,
                 "pass_rate": item.pass_rate,
