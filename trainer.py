@@ -437,6 +437,7 @@ def _on_episode_end(
     """Export DPO data for real training loop."""
     dpo_file = "data/dpo_dataset.jsonl"
     os.makedirs("data", exist_ok=True)
+    count = 0
     
     # Extract pairs from memory lessons for this episode
     # Each lesson has 'extra' which contains 'candidate_rankings'
@@ -455,12 +456,15 @@ def _on_episode_end(
                 # Only save if there is a meaningful difference
                 if chosen.get("pass_rate", 0) > rejected.get("pass_rate", 0):
                     pair = {
-                        "prompt": lesson.get("observation", ""),
+                        "prompt": extra.get("problem_description", ""),
                         "chosen": chosen.get("code", ""),
                         "rejected": rejected.get("code", ""),
                         "reward_margin": chosen.get("pass_rate", 0) - rejected.get("pass_rate", 0)
                     }
                     f.write(json.dumps(pair) + "\n")
+                    count += 1
+    if count > 0:
+        print(f"  [DPO] Exported {count} real preference pairs to {dpo_file}")
 
 
 def _on_step_end(step: int, result: dict[str, Any]) -> None:

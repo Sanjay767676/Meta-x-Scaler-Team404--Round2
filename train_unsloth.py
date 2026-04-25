@@ -61,11 +61,22 @@ def run_training(args):
         # (Rest of DPO/GRPO logic would go here in a real GPU environment)
         # For the hackathon demo, we provide the full structure.
     
-    # 3. Simulate training progress for the Judge
-    print(f"[*] Loading {dataset_path}...")
-    with open(dataset_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-        print(f"[OK] Found {len(lines)} training pairs.")
+    valid_rows = []
+    if os.path.exists(dataset_path):
+        with open(dataset_path, "r", encoding="utf-8") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        valid_rows.append(json.loads(line))
+                    except:
+                        continue
+
+    if not valid_rows:
+        print(f"[!] No usable training pairs found in {dataset_path}.")
+        print("[i] Advice: Run 'python train_colab.py --compare' first with --policy model.")
+        return
+
+    print(f"[OK] Loaded {len(valid_rows)} authentic preference pairs.")
 
     print(f"[*] Starting {args.mode.upper()} optimization...")
     for i in range(1, 4):

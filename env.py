@@ -182,6 +182,8 @@ class FORGEEnv:
             coder_reward=coder_info["total_reward"],
             breaker_reward=breaker_info["total_reward"],
             extra={
+                "task_id":             self.current_task.get("task_id", ""),
+                "problem_description": self.current_task.get("prompt", ""),
                 "step":                self.step_count,
                 "coder_version":       coder_version,
                 "breaker_tier":        self.breaker.current_tier,
@@ -192,6 +194,7 @@ class FORGEEnv:
                 "breaker_break_rate":  breaker_info["break_rate"],
                 "recent_breaker_case": self._recent_breaker_case,
                 "candidate_count":     len(candidate_solutions),
+                "candidate_rankings":  self._last_candidate_rankings,
             },
         )
 

@@ -70,10 +70,23 @@ python app.py
 python train_colab.py --compare --episodes 20
 ```
 
+## 🧠 Authentic RL Training
+FORGE-v4 generates real-world preference data for model alignment:
+
+1.  **Generate Dataset**: Run a benchmark with a model policy. The environment evaluates multiple candidates and saves "Chosen" vs "Rejected" pairs into `data/dpo_dataset.jsonl`.
+    ```bash
+    python train_colab.py --compare --episodes 20
+    ```
+2.  **Fine-tune with Unsloth**: Apply the captured adversarial feedback using the integrated DPO trainer.
+    ```bash
+    bash setup_colab.sh
+    bash run_dpo.sh
+    ```
+
 ## 🗺️ Future Roadmap
 - [ ] **Multi-Language Support**: Support for C++, Java, and Rust sandboxes.
 - [ ] **Complex Task Generation**: Beyond sorting, into graph algorithms and dynamic programming.
-- [ ] **True LLM Finetuning**: Integration with LoRA/QLoRA for real-time weights adjustment.
+- [x] **True LLM Finetuning**: Integrated with LoRA/Unsloth for RL-based weight optimization.
 - [ ] **Web Dashboard**: Advanced analytics for multi-model comparisons.
 
 ---
