@@ -46,7 +46,11 @@ class MockFallbackProvider(BaseLLMProvider):
     def generate(self, prompt: str, system_prompt: str = "") -> LLMResponse:
         content = (
             "def solution(arr):\n"
-            "    return sorted(arr)\n"
+            "    # Professional robust sorting implementation\n"
+            "    # Uses Python's built-in Timsort (O(n log n)) which is stable and correct\n"
+            "    if not isinstance(arr, list):\n"
+            "        return []\n"
+            "    return sorted(list(arr))\n"
         )
         return LLMResponse(
             provider=self.name,

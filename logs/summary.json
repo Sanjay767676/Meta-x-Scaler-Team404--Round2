@@ -1,41 +1,41 @@
 {
   "avg_break_rate": 0.0,
-  "avg_breaker_reward": -1.2,
-  "avg_coder_reward": 5.5,
+  "avg_breaker_reward": -0.9,
+  "avg_coder_reward": 8.0,
   "avg_pass_rate": 1.0,
-  "best_coder_reward": 5.5,
+  "best_coder_reward": 8.0,
   "coach_memory_summary": {
-    "avg_breaker_reward": -1.2,
-    "avg_coder_reward": 5.5,
-    "episodes_seen": 1,
+    "avg_breaker_reward": -1.935,
+    "avg_coder_reward": 7.6451,
+    "episodes_seen": 20,
     "recent_coach_notes": [
-      "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier",
-      "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier",
-      "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier"
+      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [mock] \u2192 breaker should escalate tier"
     ],
     "top_lessons": [
       {
-        "coach_note": "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier",
-        "episode": 1,
-        "reward_weight": 6.7
+        "coach_note": "Episode 5: Coder (heuristic) failed on negatives+duplicates \u2192 ensure sort key uses true value, not abs()",
+        "episode": 5,
+        "reward_weight": 19.15
       },
       {
-        "coach_note": "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier",
-        "episode": 1,
-        "reward_weight": 6.7
+        "coach_note": "Episode 5: Coder (heuristic) failed on negatives+duplicates \u2192 ensure sort key uses true value, not abs()",
+        "episode": 5,
+        "reward_weight": 17.75
       },
       {
-        "coach_note": "Episode 1: Strong performance (pass_rate=1.00) [improving_coder] \u2192 breaker should escalate tier",
-        "episode": 1,
-        "reward_weight": 6.7
+        "coach_note": "Episode 5: Coder (heuristic) failed on negatives+duplicates \u2192 ensure sort key uses true value, not abs()",
+        "episode": 5,
+        "reward_weight": 15.35
       }
     ],
-    "total_lessons": 3,
-    "weighted_signal": 134.67
+    "total_lessons": 243,
+    "weighted_signal": 26394.5075
   },
-  "coder_version": "improving_coder",
+  "coder_version": "mock",
   "final_breaker_tier": 1,
-  "generated_at": "2026-04-25T12:04:06.212142",
-  "total_episodes": 1,
-  "worst_coder_reward": 5.5
+  "generated_at": "2026-04-25T12:22:23.186712",
+  "total_episodes": 20,
+  "worst_coder_reward": 8.0
 }

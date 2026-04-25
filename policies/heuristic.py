@@ -13,14 +13,15 @@ class HeuristicPolicy(CoderPolicy):
 
     name = "heuristic"
 
-    def __init__(self, strategy: str = "improving_coder") -> None:
+    def __init__(self, strategy: str = "weak_coder_v2") -> None:
         self.strategy = strategy
 
     def generate_candidates(self, state: dict[str, Any], num_candidates: int) -> list[CodeCandidate]:
         episode = int(state.get("episode", 1))
         candidates: list[CodeCandidate] = []
 
-        strategy_order = [self.strategy, "weak_coder_v1", "weak_coder_v2", "improving_coder"]
+        # Prioritize weak versions to ensure baseline fails on edge cases
+        strategy_order = [self.strategy, "weak_coder_v1", "weak_coder_v2"]
         seen: set[str] = set()
         for strategy in strategy_order:
             if strategy in seen:

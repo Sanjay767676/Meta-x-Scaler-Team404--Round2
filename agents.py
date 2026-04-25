@@ -30,12 +30,14 @@ from config import (
 
 WEAK_CODER_V1_CODE = '''
 def solution(arr):
-    """Bubble sort — O(n²), fails slowly on large arrays."""
+    """Bubble sort — buggy on duplicates (uses strict >) and fails on negatives."""
     a = list(arr)
     n = len(a)
     for i in range(n):
         for j in range(n - i - 1):
-            if a[j] > a[j + 1]:
+            # BUG 1: Failing on negatives by using abs() unnecessarily
+            # BUG 2: Potential issue with stability if we wanted it
+            if abs(a[j]) > abs(a[j + 1]):
                 a[j], a[j + 1] = a[j + 1], a[j]
     return a
 '''
@@ -43,16 +45,15 @@ def solution(arr):
 WEAK_CODER_V2_CODE = '''
 def solution(arr):
     """
-    Selection sort — correct for positive-only arrays.
-    Bug: uses abs() comparison, so negatives can end up out of order.
+    Selection sort — buggy on duplicates and negatives.
+    Uses a faulty 'set()' logic that destroys duplicate elements.
     """
-    a = list(arr)
+    a = list(set(arr)) # BUG: destroys duplicates
     n = len(a)
     for i in range(n):
         min_idx = i
         for j in range(i + 1, n):
-            # BUG: comparing absolute values breaks negative ordering
-            if abs(a[j]) < abs(a[min_idx]):
+            if a[j] < a[min_idx]:
                 min_idx = j
         a[i], a[min_idx] = a[min_idx], a[i]
     return a
@@ -138,11 +139,9 @@ def coder_version_label(version: str, episode: int) -> str:
 
 # Test case banks per tier
 _TIER1_CASES: list[list[int]] = [
-    [],
-    [1],
-    [2, 1],
-    [3, 2, 1],
-    [1, 2, 3],
+    [10, 5, 8],
+    [-1, -5, -2], # Negatives (Tier 1 now harder)
+    [1, 1, 1],    # Duplicates
 ]
 
 _TIER2_CASES: list[list[int]] = [
@@ -233,28 +232,26 @@ class BreakerAgent:
             (4, _TIER4_CASES),
         ]
 
-        selected: list[list[int]] = []
+        seen: set[tuple[int, ...]] = set()
+        results: list[dict[str, Any]] = []
         for tier_num, pool in pools:
             if tier_num > self.current_tier:
                 break
+            
             # Sample more from the highest tier
             k = n_per_tier * 2 if tier_num == self.current_tier else n_per_tier
             k = min(k, len(pool))
-            selected.extend(random.sample(pool, k))
+            sampled = random.sample(pool, k)
+            
+            weight = 1.0 + (tier_num - 1) * 0.5 # Tier 1: 1.0, 2: 1.5, 3: 2.0, 4: 2.5
+            
+            for arr in sampled:
+                key = tuple(arr)
+                if key not in seen:
+                    seen.add(key)
+                    results.append({"input": arr, "expected_output": sorted(arr), "weight": weight})
 
-        # Remove duplicates (by converting to tuple for hashability)
-        seen: set[tuple[int, ...]] = set()
-        unique: list[list[int]] = []
-        for arr in selected:
-            key = tuple(arr)
-            if key not in seen:
-                seen.add(key)
-                unique.append(arr)
-
-        return [
-            {"input": arr, "expected_output": sorted(arr)}
-            for arr in unique
-        ]
+        return results
 
     @property
     def tier_name(self) -> str:

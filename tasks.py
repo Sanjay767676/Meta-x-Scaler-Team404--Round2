@@ -39,26 +39,30 @@ def generate_task() -> dict[str, Any]:
 
 
 def _generate_hidden_tests(n: int) -> list[dict[str, Any]]:
-    """Generate exactly n hidden tests with both random and edge-case coverage."""
+    """Generate exactly n hidden tests with difficulty weighting."""
     tests: list[dict[str, Any]] = []
-    random_slots = max(0, n - 3)
+    
+    # 1. Random small arrays (Easy) - reduced to 1
+    for _ in range(max(0, n - 6)):
+        size = random.randint(3, 5)
+        arr = [random.randint(1, 10) for _ in range(size)]
+        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.0})
 
-    for _ in range(random_slots):
-        size = random.randint(MIN_ARRAY_SIZE, MAX_ARRAY_SIZE)
-        arr = [random.randint(*ARRAY_VALUE_RANGE) for _ in range(size)]
-        tests.append({"input": arr, "expected_output": sorted(arr)})
+    # 2. Negatives and Duplicates (Medium) - increased
+    for _ in range(3):
+        arr = [random.randint(-100, 0) for _ in range(8)]
+        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.5})
+    
+    for _ in range(2):
+        arr = [random.choice([1, 2, 3]) for _ in range(15)]
+        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.5})
 
-    # Edge case: already-sorted array
-    arr = sorted([random.randint(*ARRAY_VALUE_RANGE) for _ in range(5)])
-    tests.append({"input": arr, "expected_output": sorted(arr)})
-
-    # Edge case: reverse-sorted array
-    arr = sorted([random.randint(*ARRAY_VALUE_RANGE) for _ in range(5)], reverse=True)
-    tests.append({"input": arr, "expected_output": sorted(arr)})
-
-    # Edge case: single element
-    arr = [random.randint(*ARRAY_VALUE_RANGE)]
-    tests.append({"input": arr, "expected_output": sorted(arr)})
+    # 3. Large arrays and Boundary values (Hard)
+    arr = [random.randint(*ARRAY_VALUE_RANGE) for _ in range(MAX_ARRAY_SIZE)]
+    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.0})
+    
+    arr = [random.choice([ARRAY_VALUE_RANGE[0], 0, ARRAY_VALUE_RANGE[1]]) for _ in range(20)]
+    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.0})
 
     return tests[:n]
 
@@ -84,7 +88,7 @@ def generate_breaker_task(original_task: dict[str, Any]) -> dict[str, Any]:
     ]
 
     adversarial_tests = [
-        {"input": arr, "expected_output": sorted(arr)}
+        {"input": arr, "expected_output": sorted(arr), "weight": 2.0 if len(arr) >= MAX_ARRAY_SIZE else 1.5}
         for arr in adversarial_candidates
     ]
 

@@ -29,17 +29,19 @@ def coder_reward(test_results: list[dict[str, Any]]) -> dict[str, Any]:
 
     for result in test_results:
         status = result.get("status", "error")
+        weight = result.get("weight", 1.0)
+        
         if status == "pass":
-            breakdown.append(CODER_PASS_REWARD)
+            breakdown.append(CODER_PASS_REWARD * weight)
             pass_count += 1
         elif status == "timeout":
-            breakdown.append(CODER_TIMEOUT_PENALTY)
+            breakdown.append(CODER_TIMEOUT_PENALTY * weight)
             timeout_count += 1
         elif status == "fail":
-            breakdown.append(CODER_FAIL_PENALTY)
+            breakdown.append(CODER_FAIL_PENALTY * weight)
             fail_count += 1
         else:
-            breakdown.append(CODER_ERROR_PENALTY)
+            breakdown.append(CODER_ERROR_PENALTY * weight)
             error_count += 1
 
     total_tests = len(test_results)
@@ -74,19 +76,21 @@ def breaker_reward(adversarial_results: list[dict[str, Any]], coder_base_pass_ra
 
     for result in adversarial_results:
         status = result.get("status", "error")
+        weight = result.get("weight", 1.0)
+        
         if status == "pass":
             passes += 1
-            breakdown.append(BREAKER_FAIL_PENALTY)
+            breakdown.append(BREAKER_FAIL_PENALTY * weight)
             continue
 
         breaks += 1
-        reward = BREAKER_BREAK_REWARD * quality_multiplier
+        reward = BREAKER_BREAK_REWARD * quality_multiplier * weight
         if status == "timeout":
             timeout_breaks += 1
-            reward += BREAKER_TIMEOUT_BREAK_BONUS
+            reward += BREAKER_TIMEOUT_BREAK_BONUS * weight
         elif status == "error":
             error_breaks += 1
-            reward += BREAKER_ERROR_BREAK_BONUS
+            reward += BREAKER_ERROR_BREAK_BONUS * weight
         breakdown.append(reward)
 
     total_tests = len(adversarial_results)

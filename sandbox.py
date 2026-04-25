@@ -184,5 +184,9 @@ def run_code_against_tests(code: str, tests: list[dict[str, Any]]) -> list[dict[
     for test in tests:
         test_input = list(test.get("input", []))
         expected = test.get("expected_output")
-        results.append(run_code(code=code, test_input=test_input, expected_output=expected))
+        result = run_code(code=code, test_input=test_input, expected_output=expected)
+        # Preserve weight if present
+        if "weight" in test:
+            result["weight"] = test["weight"]
+        results.append(result)
     return results
