@@ -1,0 +1,46 @@
+name: FORGE-v4
+version: 0.2.0
+runtime: python3.11
+entrypoint: app.py
+mode: adversarial-codegen
+
+benchmark:
+  name: Controlled Adversarial Sorting Benchmark
+  framing: >
+    Integer sorting is used as a constrained benchmark to measure robust code
+    generation under adversarial pressure before scaling to broader coding tasks.
+  guarantees:
+    - deterministic_task_shape
+    - reproducible_reward_metrics
+    - candidate_ranking_traceability
+
+agents:
+  defender:
+    role: coder
+    output: python_source
+  adversary:
+    role: breaker
+    output: adversarial_test_cases
+
+environment:
+  class: FORGEEnv
+  reset: reset
+  step: step
+  state: get_state
+
+artifacts:
+  memory: data/coach_memory.json
+  logs:
+    - logs/rewards.json
+    - logs/episodes.csv
+    - logs/summary.json
+  outputs_dir: outputs
+  reward_graphs_dir: outputs/reward_graphs
+  run_artifacts_dir: outputs/run_artifacts
+  adapters_dir: models/adapters
+  checkpoints_dir: models/checkpoints
+
+goals:
+  - improve_defender_pass_rate
+  - improve_adversary_break_rate
+  - track_tier_progression
