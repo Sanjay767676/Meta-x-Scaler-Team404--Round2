@@ -93,7 +93,7 @@ def run_training(args):
     print(f"\n[SUCCESS] Training complete. Adapters saved to {output_dir}")
     
     # 5. Generate Training Report
-    generate_training_report(args, len(lines), output_dir)
+    generate_training_report(args, len(valid_rows), output_dir)
 
 def generate_training_report(args, data_size, output_dir):
     report_path = "outputs/TRAINING_REPORT.md"
