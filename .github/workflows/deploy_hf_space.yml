@@ -32,7 +32,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           
           # Add Hugging Face Space as a remote
-          git remote add hf https://huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2.git || git remote set-url hf https://huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
+          git remote add hf https://huggingface.co/spaces/sanjay7676/Team404_FORGE.git || git remote set-url hf https://huggingface.co/spaces/sanjay7676/Team404_FORGE.git
           
           # Push to Hugging Face
-          git push --force https://Sanjay767676:$HF_TOKEN@huggingface.co/spaces/Sanjay767676/Meta-x-Scaler-Team404--Round2.git main:main
+          git push --force https://sanjay7676:$HF_TOKEN@huggingface.co/spaces/sanjay7676/Team404_FORGE.git main:main

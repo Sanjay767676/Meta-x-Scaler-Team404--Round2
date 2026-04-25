@@ -38,7 +38,7 @@ This checklist ensures your project meets 100% of the judging criteria and submi
 Your repository is now 100% compliant with the Meta OpenEnv Hackathon requirements.
 
 1. **GitHub**: Latest code and results pushed.
-2. **HF Space**: Automatically syncing via GitHub Actions.
+2. **HF Space**: `https://huggingface.co/spaces/sanjay7676/Team404_FORGE`
 3. **Evidence**: Charts and narratives generated in `outputs/`.
 
 *Congratulations on a strong submission!*
