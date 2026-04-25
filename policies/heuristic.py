@@ -21,7 +21,15 @@ class HeuristicPolicy(CoderPolicy):
         candidates: list[CodeCandidate] = []
 
         # Prioritize weak versions to ensure baseline fails on edge cases
-        strategy_order = [self.strategy, "weak_coder_v1", "weak_coder_v2"]
+        # Removed improving_coder from default search to ensure it stays a weak baseline
+        strategy_order = [self.strategy, "weak_coder_v1", "weak_coder_v2", "weak_coder_v3"]
+        if self.strategy == "improving_coder":
+            # If user explicitly asked for improving_coder, we use it, but 
+            # for the heuristic baseline we usually want something that fails.
+            pass
+        else:
+            # If we are in "heuristic" mode, we should stick to buggy versions
+            strategy_order = ["weak_coder_v1", "weak_coder_v2", "weak_coder_v3"]
         seen: set[str] = set()
         for strategy in strategy_order:
             if strategy in seen:

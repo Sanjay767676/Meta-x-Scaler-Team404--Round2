@@ -6,6 +6,7 @@ import csv
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from config import LOG_REWARDS_FILE, LOG_EPISODES_FILE, LOG_SUMMARY_FILE, LOG_DIR
@@ -17,13 +18,14 @@ from storage.artifact_store import save_run_artifact
 # ──────────────────────────────────────────────
 
 def _ensure_log_dir() -> None:
-    os.makedirs(LOG_DIR, exist_ok=True)
+    Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 
 
 def _load_json(path: str, default: Any) -> Any:
-    if os.path.exists(path):
+    p = Path(path)
+    if p.exists():
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(p, "r", encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             pass
@@ -31,15 +33,38 @@ def _load_json(path: str, default: Any) -> Any:
 
 
 def _write_json(path: str, data: Any) -> None:
-    tmp_path = f"{path}.tmp"
+    p = Path(path)
+    tmp_path = p.with_suffix(".tmp")
     with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, sort_keys=True)
-    os.replace(tmp_path, path)
+    os.replace(str(tmp_path), str(p))
 
 
 # ──────────────────────────────────────────────
 # Step-level logging
 # ──────────────────────────────────────────────
+
+def log_steps_batch(records_to_add: list[dict[str, Any]]) -> None:
+    """
+    Append a batch of step records to logs/rewards.json efficiently.
+    """
+    if not records_to_add:
+        return
+        
+    _ensure_log_dir()
+    records: list[dict[str, Any]] = _load_json(LOG_REWARDS_FILE, [])
+    
+    now = datetime.utcnow().isoformat()
+    for r in records_to_add:
+        r.setdefault("timestamp", now)
+        # Ensure rounding for clean logs
+        for k in ["coder_reward", "breaker_reward", "pass_rate", "break_rate"]:
+            if k in r:
+                r[k] = round(float(r[k]), 4)
+                
+    records.extend(records_to_add)
+    _write_json(LOG_REWARDS_FILE, records)
+
 
 def log_step(
     episode: int,
@@ -55,40 +80,22 @@ def log_step(
     break_rate: float,
 ) -> None:
     """
-    Append one step's metrics to logs/rewards.json.
-
-    Args:
-        episode:        Episode index.
-        step:           Step index within the episode.
-        coder_version:  Name of the coder strategy used.
-        breaker_tier:   Current breaker tier number.
-        coder_reward:   Total coder reward this step.
-        breaker_reward: Total breaker reward this step.
-        pass_rate:      Fraction of hidden tests passed.
-        fail_count:     Number of failing tests.
-        error_count:    Number of error/timeout tests.
-        timeout_count:  Number of sandbox timeouts specifically.
-        break_rate:     Fraction of breaker tests that broke the coder.
+    Single step logger (calls batch internally for backwards compatibility).
     """
-    _ensure_log_dir()
-    records: list[dict[str, Any]] = _load_json(LOG_REWARDS_FILE, [])
-
     record = {
-        "timestamp":      datetime.utcnow().isoformat(),
         "episode":        episode,
         "step":           step,
         "coder_version":  coder_version,
         "breaker_tier":   breaker_tier,
-        "coder_reward":   round(float(coder_reward), 4),
-        "breaker_reward": round(float(breaker_reward), 4),
-        "pass_rate":      round(float(pass_rate), 4),
+        "coder_reward":   coder_reward,
+        "breaker_reward": breaker_reward,
+        "pass_rate":      pass_rate,
         "fail_count":     fail_count,
         "error_count":    error_count,
         "timeout_count":  timeout_count,
-        "break_rate":     round(float(break_rate), 4),
+        "break_rate":     break_rate,
     }
-    records.append(record)
-    _write_json(LOG_REWARDS_FILE, records)
+    log_steps_batch([record])
 
 
 # ──────────────────────────────────────────────
@@ -121,7 +128,8 @@ def log_episode(
     Append one episode summary row to logs/episodes.csv.
     """
     _ensure_log_dir()
-    file_exists = os.path.exists(LOG_EPISODES_FILE)
+    p = Path(LOG_EPISODES_FILE)
+    file_exists = p.exists()
 
     row = {
         "timestamp":          datetime.utcnow().isoformat(),
@@ -138,7 +146,7 @@ def log_episode(
         "steps":              steps,
     }
 
-    with open(LOG_EPISODES_FILE, "a", newline="", encoding="utf-8") as f:
+    with open(p, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=_CSV_FIELDS)
         if not file_exists:
             writer.writeheader()
@@ -196,5 +204,5 @@ def write_episode_report(episode: int, payload: dict[str, Any]) -> str:
 def print_log_paths() -> None:
     """Print the paths of all updated log files."""
     for path in [LOG_REWARDS_FILE, LOG_EPISODES_FILE, LOG_SUMMARY_FILE]:
-        exists = "✓" if os.path.exists(path) else "✗"
+        exists = "✓" if Path(path).exists() else "✗"
         print(f"  {exists}  {path}")

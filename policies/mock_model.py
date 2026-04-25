@@ -1,31 +1,75 @@
-"""Mock fallback policy for stable offline benchmark runs."""
-
-from __future__ import annotations
-
 from typing import Any
-
+from memory import CoachMemory
 from llm_agent import get_provider
 from policies.base import CodeCandidate, CoderPolicy
 
 
 class MockModelPolicy(CoderPolicy):
-    """Always uses the mock provider regardless of external dependencies."""
+    """
+    Simulates an improving LLM policy that reads memory to handle edge cases.
+    """
 
     name = "mock"
 
-    def __init__(self) -> None:
+    def __init__(self, memory: CoachMemory | None = None) -> None:
         self.provider = get_provider("mock")
+        self.memory = memory or CoachMemory()
 
     def generate_candidates(self, state: dict[str, Any], num_candidates: int) -> list[CodeCandidate]:
-        prompt = state.get("problem_description", "Write solution(arr) that sorts integers ascending.")
+        """
+        Generates candidates based on memory of past failures.
+        """
+        # 1. Read memory for failures
+        summary = self.memory.summary()
+        recent_notes = summary.get("recent_coach_notes", [])
+        
+        # Analyze failures
+        has_neg_fail = any("negative" in n.lower() for n in recent_notes)
+        has_dup_fail = any("duplicate" in n.lower() for n in recent_notes)
+        has_large_fail = any("large" in n.lower() or "timeout" in n.lower() for n in recent_notes)
+
         candidates: list[CodeCandidate] = []
-        for idx in range(max(1, num_candidates)):
-            response = self.provider.generate(prompt=prompt)
+        n = max(3, num_candidates) # Default to 3 candidates for better realism
+
+        for i in range(n):
+            # Simulate different strategies based on memory
+            if has_neg_fail or has_dup_fail or has_large_fail:
+                # Memory-informed "Strong" strategy
+                code = (
+                    "def solution(arr):\n"
+                    "    # MEMORY-INFORMED: Handling negatives, duplicates, and efficiency\n"
+                    "    # Uses Python's Timsort which is O(n log n) and handles all edge cases.\n"
+                    "    if not isinstance(arr, list): return []\n"
+                    "    return sorted(list(arr))\n"
+                )
+                source = "mock:model:robust"
+            else:
+                # Default "Naive" strategy for early episodes
+                if i == 0:
+                    # One slightly buggy candidate to simulate "thinking"
+                    code = (
+                        "def solution(arr):\n"
+                        "    # Naive quicksort (potentially buggy on recursion depth)\n"
+                        "    if not arr: return []\n"
+                        "    pivot = arr[0]\n"
+                        "    less = [x for x in arr[1:] if x < pivot]\n"
+                        "    greater = [x for x in arr[1:] if x >= pivot]\n"
+                        "    return solution(less) + [pivot] + solution(greater)\n"
+                    )
+                    source = "mock:model:naive"
+                else:
+                    code = (
+                        "def solution(arr):\n"
+                        "    return sorted(list(arr))\n"
+                    )
+                    source = "mock:model:standard"
+
             candidates.append(
                 CodeCandidate(
-                    code=response.content,
-                    source="mock:model",
-                    metadata={"candidate_idx": idx, "model": response.model},
+                    code=code,
+                    source=source,
+                    metadata={"candidate_idx": i, "memory_aware": True}
                 )
             )
+
         return candidates

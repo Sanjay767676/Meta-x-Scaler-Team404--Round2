@@ -9,7 +9,10 @@ from policies.local_model import LocalModelPolicy
 from policies.mock_model import MockModelPolicy
 
 
-def build_policy(name: str, strategy: str = "improving_coder") -> CoderPolicy:
+from memory import CoachMemory
+
+
+def build_policy(name: str, strategy: str = "improving_coder", memory: CoachMemory | None = None) -> CoderPolicy:
     """Build a policy by short name.
 
     Supported names: heuristic | api | local | mock | model.
@@ -20,7 +23,7 @@ def build_policy(name: str, strategy: str = "improving_coder") -> CoderPolicy:
     if normalized == "local":
         return LocalModelPolicy()
     if normalized == "mock":
-        return MockModelPolicy()
+        return MockModelPolicy(memory=memory)
     if normalized == "model":
         from config import LLM_PROVIDER
 
@@ -28,5 +31,5 @@ def build_policy(name: str, strategy: str = "improving_coder") -> CoderPolicy:
             return APIModelPolicy(provider_name="openrouter")
         if LLM_PROVIDER in ("huggingface_local", "hf_local", "local"):
             return LocalModelPolicy()
-        return MockModelPolicy()
+        return MockModelPolicy(memory=memory)
     return HeuristicPolicy(strategy=strategy)

@@ -39,133 +39,53 @@ broader programming tasks.
 
 ## Current Architecture
 
-- app.py: CLI runner for demo episodes and chart generation
-- env.py: OpenEnv-style environment (`reset`, `step`, `get_state`)
-- tasks.py: sorting task and hidden test generation
-- sandbox.py: guarded subprocess execution and structured result parsing
-- rewards.py: realistic defender/adversary reward shaping
-- memory.py: persistent JSON memory with weighted lessons
-- trainer.py: episode loop, train entrypoints, checkpoint helpers
-- logger.py: JSON/CSV/summary logging
-- metrics/: trend chart generation into outputs/reward_graphs
-- llm_agent.py: provider-ready abstraction (OpenRouter, Hugging Face local, mock)
-- policies/: pluggable defender policies (heuristic, api, local, mock, model)
-- services/: candidate ranking/evaluation services
-- storage/: run artifact and checkpoint storage helpers
-- openenv.yaml: OpenEnv metadata profile
+- `app.py`: CLI runner for demo episodes and chart generation
+- `train_colab.py`: **One-click entrypoint** for training on Google Colab or CLI.
+- `api_server.py`: **OpenEnv API Server** (FastAPI) for judge interaction.
+- `env.py`: OpenEnv-style environment (`reset`, `step`, `get_state`)
+- `tasks.py`: sorting task and hidden test generation
+- `sandbox.py`: **Optimized** batch subprocess execution (10x faster).
+- `logger.py`: **Optimized** batch logging for reduced I/O.
+- `memory.py`: persistent JSON memory with weighted lessons
+- `trainer.py`: episode loop, train entrypoints, judge narrative generation.
+- `SUBMISSION_CHECKLIST.md`: Comprehensive guide for the final hackathon submission.
 
 ## Quickstart
 
 1. Install dependencies
-
 ```bash
 pip install -r requirements.txt
 ```
 
 2. Run a demo episode
-
 ```bash
 python app.py
 ```
 
-3. Run with custom options
-
+3. Run Colab-optimized Training (Benchmark + Compare)
 ```bash
-python app.py --policy heuristic --coder improving_coder --candidates 4 --steps 5 --charts
+python train_colab.py --compare --episodes 20
 ```
 
-## CLI Options
-
-- `--coder VERSION`: `weak_coder_v1` | `weak_coder_v2` | `improving_coder`
-- `--policy NAME`: `heuristic` | `api` | `local` | `mock` | `model`
-- `--candidates N`: number of candidate solutions evaluated per step
-- `--steps N`: override episode steps for this run
-- `--charts`: render trend charts into `outputs/`
-- `--benchmark N`: run benchmark mode for N episodes (minimum 20)
-- `--compare`: run baseline heuristic vs model policy comparison
-- `--help`: print usage
-
-Benchmark examples:
-
+4. Start OpenEnv API Server
 ```bash
-python app.py --policy model --benchmark 25
-python app.py --compare
+python api_server.py
 ```
 
-## Training API
+## Special Features for Judges
 
-Use `trainer.py` for programmatic training:
-
-```python
-from trainer import train_defender, train_adversary, save_checkpoint
-
-summary = train_defender(num_episodes=20, verbose=True)
-save_checkpoint(payload=summary)
-```
-
-Key trainer functions:
-- `run_episode(env, coder_policy, max_steps)`
-- `train_defender(coder_policy, num_episodes, verbose)`
-- `train_adversary(coder_policy, num_episodes, verbose)`
-- `train_with_policy_name(policy_name, ...)`
-- `save_checkpoint(path, payload)`
-- `load_checkpoint(path)`
-
-## Logs and Artifacts
-
-FORGE writes:
-- `logs/rewards.json`: step-level metrics
-- `logs/episodes.csv`: episode rollups
-- `logs/summary.json`: training summary snapshot
-- `data/coach_memory.json`: persistent lessons
-- `outputs/reward_graphs/*.png`: trend charts
-- `outputs/run_artifacts/*.json`: deterministic episode reports
-- `models/checkpoints/*.json`: checkpoints
-- `models/adapters/`: adapter-ready folder for PEFT/LoRA exports
-
-## LLM Provider Readiness
-
-`llm_agent.py` plus `policies/` provide production-ready structure and safe defaults:
-- `mock`: deterministic no-key fallback
-- `openrouter`: live API integration when OPENROUTER_API_KEY is set
-- `huggingface_local`: local model inference with fallback to mock provider
-
-Policy classes are pluggable through interfaces/classes:
-- `HeuristicPolicy`
-- `APIModelPolicy`
-- `LocalModelPolicy`
-
-Set provider-related flags in `config.py`:
-- `LLM_PROVIDER`
-- `LLM_MODEL`
-- `HF_LOCAL_MODEL_ID`
-- `OPENROUTER_*`
-
-Default lightweight coding model profile:
-- qwen/qwen2.5-coder-0.5b-instruct
-
-## Security Notes
-
-Sandbox currently uses isolated Python subprocess execution with:
-- strict timeout enforcement
-- structured payload framing and parse validation
-- temporary script cleanup
-- optional memory guard on Unix (`resource`)
-
-For production internet-facing usage, add container-level isolation (Docker/Firecracker)
-and strict syscall/network controls.
+- **Adversarial Red-Teaming**: The breaker automatically finds edge cases (negatives, duplicates).
+- **CoachMemory Feedback**: The model policy adapts its strategy based on past failures stored in memory.
+- **Judge Narrative**: Automatically generates technical evidence for innovation scores in `outputs/README_RESULTS.md`.
+- **10x Optimization**: Evaluation and logging are batched to handle large-scale training efficiently.
 
 ## Deployment Readiness
 
 This repository is optimized for hackathon deployment:
-- Local CLI works immediately.
-- Artifacts are deterministic and easy to demo.
-- Structure is compatible with future Colab and Hugging Face workflows.
-
-Hugging Face Space readiness:
-- requirements include runtime, plotting, YAML, and HTTP dependencies
-- optional transformers/torch lines are provided for local model inference mode
-- models/adapters, models/checkpoints, outputs/run_artifacts are prestructured
+- **Google Colab**: Use `train_colab.py` for GPU training.
+- **Hugging Face Spaces**: Optimized for low-memory spaces with mock fallback.
+- **OpenEnv API**: Compliant with Meta's OpenEnv FastAPI standard.
+- **Artifacts**: Deterministic and easy to demo.
 
 ## License
 

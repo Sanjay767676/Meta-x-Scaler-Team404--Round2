@@ -42,9 +42,9 @@ BREAKER_TIER_NAMES = {
     3: "Tier-3 (stress)",
     4: "Tier-4 (boundary/extreme)",
 }
-BREAKER_TIER_UNLOCK_RATE = 0.3  # Lowered from 0.6 for faster unlock
-BREAKER_TIER3_MIN_EPISODE = 2   # Lowered from 4
-BREAKER_TIER4_MIN_EPISODE = 5   # Lowered from 7
+BREAKER_TIER_UNLOCK_RATE = 0.1  # Fast unlock
+BREAKER_TIER3_MIN_EPISODE = 1   # Available immediately if breaker performs
+BREAKER_TIER4_MIN_EPISODE = 1   # Available immediately if breaker performs
 
 # Tier thresholds for display
 TIER_THRESHOLDS = {

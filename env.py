@@ -77,6 +77,9 @@ class FORGEEnv:
         self.current_task: dict[str, Any] = {}
         self.done: bool = True
 
+        # Caching to avoid redundant sandbox runs
+        self._eval_cache: dict[str, dict[str, Any]] = {}
+
         # Tracked across the episode
         self._coder_version: str = "unknown"
         self._pass_rate_history: list[float] = []
@@ -92,14 +95,12 @@ class FORGEEnv:
     def reset(self) -> dict[str, Any]:
         """
         Start a new episode. Generates a fresh task and resets counters.
-
-        Returns:
-            Initial state dict.
         """
         self.episode += 1
         self.step_count = 0
         self.done = False
 
+        self._eval_cache = {} # Clear cache for new task
         self._coder_version = "unknown"
         self._pass_rate_history = []
         self._recent_breaker_case = []
@@ -133,24 +134,7 @@ class FORGEEnv:
         return coder_code, coder_version, normalized_candidates
 
     def step(self, action: dict[str, Any]) -> dict[str, Any]:
-        """
-        Advance the environment by one step.
-
-        Args:
-            action: {
-                "coder_code":    str   — Python source defining solution(arr)
-                "coder_version": str   — human label for the coder strategy used
-            }
-
-        Returns:
-            {
-                "state":          dict — next observable state,
-                "coder_reward":   dict — coder reward breakdown,
-                "breaker_reward": dict — breaker reward breakdown,
-                "done":           bool,
-                "info":           dict — diagnostics,
-            }
-        """
+        """Advance the environment by one step."""
         if self.done:
             raise RuntimeError("Episode is done. Call reset() before step().")
 
@@ -184,7 +168,7 @@ class FORGEEnv:
         self._last_coder_pass_rate = coder_info["pass_rate"]
         self._last_timeout_count = coder_info["timeout_count"]
 
-        # ── 4. Update coach memory with rich lesson ───────────────────────
+        # ── 4. Update coach memory ────────────────────────────────────────
         self.memory.add_lesson(
             episode=self.episode,
             agent="env",
@@ -270,20 +254,22 @@ class FORGEEnv:
             "public_example": self.current_task.get("public_example", {}),
         }
 
-    # ──────────────────────────────────────────────
-    # Private evaluation helpers
-    # ──────────────────────────────────────────────
-
     def _evaluate_coder(self, code: str) -> dict[str, Any]:
         """Run the coder's code against hidden tests and compute reward."""
-        hidden_tests = self.current_task.get("hidden_tests", [])
+        if code in self._eval_cache:
+            return self._eval_cache[code]
 
+        hidden_tests = self.current_task.get("hidden_tests", [])
         if not code or not hidden_tests:
             dummy = [{"status": "error"} for _ in hidden_tests or [{}]]
             return coder_reward(dummy)
 
         results = run_code_against_tests(code, hidden_tests)
-        return coder_reward(results)
+        info = coder_reward(results)
+        
+        # Cache the result
+        self._eval_cache[code] = info
+        return info
 
     def _evaluate_breaker(
         self,
@@ -292,6 +278,7 @@ class FORGEEnv:
         coder_info: dict[str, Any],
     ) -> dict[str, Any]:
         """Run the coder's code against breaker adversarial tests."""
+        # Breaker tests change every step, so we don't cache this as easily
         if not coder_code or not breaker_tests:
             dummy = [{"status": "pass"} for _ in breaker_tests or [{}]]
             return breaker_reward(dummy, coder_base_pass_rate=coder_info["pass_rate"])

@@ -293,6 +293,7 @@ def main() -> None:
         print(f"  Pass-rate delta      : {report['improvement']['pass_rate_delta']:+.4f}")
         print(f"  Defender reward delta: {report['improvement']['defender_reward_delta']:+.4f}")
         print(f"  Adversary reward delta: {report['improvement']['adversary_reward_delta']:+.4f}")
+        print(f"  Tier Progression Delta: {report['improvement']['max_tier_delta']:+d}")
         print("  Judge assets exported to outputs/")
         sys.exit(0)
 

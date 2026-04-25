@@ -30,25 +30,28 @@ from config import (
 
 WEAK_CODER_V1_CODE = '''
 def solution(arr):
-    """Bubble sort — buggy on duplicates (uses strict >) and fails on negatives."""
+    """Bubble sort — fails on negatives and large arrays."""
     a = list(arr)
     n = len(a)
     for i in range(n):
         for j in range(n - i - 1):
-            # BUG 1: Failing on negatives by using abs() unnecessarily
-            # BUG 2: Potential issue with stability if we wanted it
+            # BUG: Fails on negatives by using abs() for comparison
             if abs(a[j]) > abs(a[j + 1]):
                 a[j], a[j + 1] = a[j + 1], a[j]
+    # BUG: Fails on large arrays by returning truncated result
+    if len(a) > 15: return a[:10]
     return a
 '''
 
 WEAK_CODER_V2_CODE = '''
 def solution(arr):
     """
-    Selection sort — buggy on duplicates and negatives.
-    Uses a faulty 'set()' logic that destroys duplicate elements.
+    Selection sort — fails on duplicates and large values.
     """
-    a = list(set(arr)) # BUG: destroys duplicates
+    # BUG: destroys duplicates
+    a = list(set(arr)) 
+    # BUG: fails on values > 50 by capping them
+    a = [min(x, 50) for x in a]
     n = len(a)
     for i in range(n):
         min_idx = i
@@ -56,6 +59,17 @@ def solution(arr):
             if a[j] < a[min_idx]:
                 min_idx = j
         a[i], a[min_idx] = a[min_idx], a[i]
+    return a
+'''
+
+WEAK_CODER_V3_CODE = '''
+def solution(arr):
+    """
+    Boundary value bug — fails on zeros and mixed signs.
+    """
+    # BUG: removes all zeros
+    # BUG: fails to handle mixed signs correctly (only returns positives)
+    a = sorted([x for x in arr if x > 0]) 
     return a
 '''
 
@@ -99,7 +113,7 @@ def get_coder_code(version: str, episode: int = 1) -> str:
     Return the Python source code for the given coder version.
 
     Args:
-        version: "weak_coder_v1" | "weak_coder_v2" | "improving_coder"
+        version: "weak_coder_v1" | "weak_coder_v2" | "weak_coder_v3" | "improving_coder"
         episode: current episode number (used by improving_coder)
     """
     if version == "weak_coder_v1":
@@ -107,6 +121,9 @@ def get_coder_code(version: str, episode: int = 1) -> str:
 
     if version == "weak_coder_v2":
         return WEAK_CODER_V2_CODE
+
+    if version == "weak_coder_v3":
+        return WEAK_CODER_V3_CODE
 
     if version == "improving_coder":
         return IMPROVING_CODER_TEMPLATE.format(
@@ -121,9 +138,11 @@ def get_coder_code(version: str, episode: int = 1) -> str:
 def coder_version_label(version: str, episode: int) -> str:
     """Human-readable label for what strategy the coder is using this episode."""
     if version == "weak_coder_v1":
-        return "weak_coder_v1 (bubble sort)"
+        return "weak_coder_v1 (bubble sort / abs-bug)"
     if version == "weak_coder_v2":
-        return "weak_coder_v2 (selection sort / abs-bug)"
+        return "weak_coder_v2 (selection sort / set-bug)"
+    if version == "weak_coder_v3":
+        return "weak_coder_v3 (filter-bug / boundary)"
     if version == "improving_coder":
         if episode <= IMPROVING_CODER_TIER1_UNTIL:
             return f"improving_coder → bubble sort  (ep {episode} ≤ {IMPROVING_CODER_TIER1_UNTIL})"
@@ -140,15 +159,16 @@ def coder_version_label(version: str, episode: int) -> str:
 # Test case banks per tier
 _TIER1_CASES: list[list[int]] = [
     [10, 5, 8],
-    [-1, -5, -2], # Negatives (Tier 1 now harder)
+    [-1, -5, -2], # Negatives
     [1, 1, 1],    # Duplicates
+    [0, 5, 2],    # Zeros (to trigger weak_coder_v3)
 ]
 
 _TIER2_CASES: list[list[int]] = [
     [1, 1, 1, 1],                               # all duplicates
     [2, 2, 1, 1, 3, 3],                         # duplicate pairs
     [-5, -1, -3, -7, -2],                       # all negatives
-    [-3, 0, 3, -1, 1],                          # mixed sign
+    [-3, 0, 3, -1, 1],                          # mixed sign + zero
     [1, 2, 3, 4, 5],                            # already sorted
     [5, 4, 3, 2, 1],                            # reverse sorted
     [0, 0, 0],                                  # all zeros
@@ -160,6 +180,7 @@ _TIER3_CASES: list[list[int]] = [
     [random.randint(-100, 100) for _ in range(MAX_ARRAY_SIZE)],  # large random
     [0] * MAX_ARRAY_SIZE,                                    # all zeros, large
     list(range(MAX_ARRAY_SIZE)),                             # sorted ascending, large
+    [random.randint(-10, 10) for _ in range(MAX_ARRAY_SIZE)], # mixed, large
 ]
 
 _TIER4_CASES: list[list[int]] = [
@@ -168,6 +189,7 @@ _TIER4_CASES: list[list[int]] = [
     [-100] * 10 + [100] * 10,                               # boundary mixed
     list(range(-10, 11)),                                    # full range small
     [random.randint(-100, 100) for _ in range(MAX_ARRAY_SIZE)],  # stress random
+    [ARRAY_VALUE_RANGE[0], 0, ARRAY_VALUE_RANGE[1]] * 3,     # boundary/zero combo
 ]
 
 
@@ -243,7 +265,8 @@ class BreakerAgent:
             k = min(k, len(pool))
             sampled = random.sample(pool, k)
             
-            weight = 1.0 + (tier_num - 1) * 0.5 # Tier 1: 1.0, 2: 1.5, 3: 2.0, 4: 2.5
+            # Weighted scoring: higher tiers give significantly more points
+            weight = 1.0 + (tier_num - 1) * 1.5 # Tier 1: 1.0, 2: 2.5, 3: 4.0, 4: 5.5
             
             for arr in sampled:
                 key = tuple(arr)

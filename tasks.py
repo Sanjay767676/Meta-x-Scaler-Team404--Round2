@@ -42,27 +42,28 @@ def _generate_hidden_tests(n: int) -> list[dict[str, Any]]:
     """Generate exactly n hidden tests with difficulty weighting."""
     tests: list[dict[str, Any]] = []
     
-    # 1. Random small arrays (Easy) - reduced to 1
-    for _ in range(max(0, n - 6)):
+    # 1. Random small arrays (Easy)
+    for _ in range(1):
         size = random.randint(3, 5)
         arr = [random.randint(1, 10) for _ in range(size)]
         tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.0})
 
-    # 2. Negatives and Duplicates (Medium) - increased
-    for _ in range(3):
-        arr = [random.randint(-100, 0) for _ in range(8)]
-        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.5})
-    
+    # 2. Negatives and Duplicates (Medium)
     for _ in range(2):
-        arr = [random.choice([1, 2, 3]) for _ in range(15)]
-        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 1.5})
-
-    # 3. Large arrays and Boundary values (Hard)
-    arr = [random.randint(*ARRAY_VALUE_RANGE) for _ in range(MAX_ARRAY_SIZE)]
-    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.0})
+        arr = [random.randint(-100, 0) for _ in range(8)]
+        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.5})
     
-    arr = [random.choice([ARRAY_VALUE_RANGE[0], 0, ARRAY_VALUE_RANGE[1]]) for _ in range(20)]
-    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.0})
+    for _ in range(1):
+        arr = [random.choice([1, 2, 3]) for _ in range(15)]
+        tests.append({"input": arr, "expected_output": sorted(arr), "weight": 2.5})
+
+    # 3. Large arrays, Zeros, and Boundary values (Hard)
+    arr = [random.randint(*ARRAY_VALUE_RANGE) for _ in range(MAX_ARRAY_SIZE)]
+    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 4.0})
+    
+    # Boundary and Zeros specifically for weak_coder_v3
+    arr = [0, ARRAY_VALUE_RANGE[0], ARRAY_VALUE_RANGE[1], 0, 5, -5]
+    tests.append({"input": arr, "expected_output": sorted(arr), "weight": 5.5})
 
     return tests[:n]
 

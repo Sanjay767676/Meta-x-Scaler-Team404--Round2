@@ -1,49 +1,22 @@
-# FORGE-v4 requirements
-# Core environment — no heavy ML deps needed to run the skeleton
-# Uncomment TRL / Unsloth blocks when adding LLM training.
+# FORGE-v4: Adversarial Code Generation Environment
+# Finalized requirements for CLI, Colab, and Hugging Face Spaces.
 
-# ──────────────────────────────────────────────
-# Standard library extensions
-# ──────────────────────────────────────────────
-tqdm>=4.66.0          # Progress bars for training loops
-
-# ──────────────────────────────────────────────
-# Data / logging utilities
-# ──────────────────────────────────────────────
-numpy>=1.26.0         # Array math utilities
-pandas>=2.2.0         # Episode log analysis
-matplotlib>=3.8.0     # Professional trend charts
-PyYAML>=6.0.1         # openenv.yaml parsing and tooling support
-
-# ──────────────────────────────────────────────
-# Experiment tracking (optional but recommended)
-# ──────────────────────────────────────────────
-# wandb>=0.17.0       # Weights & Biases — uncomment to enable
-
-# ──────────────────────────────────────────────
-# LLM / RL training (future integration)
-# ──────────────────────────────────────────────
-# torch>=2.3.0
-# transformers>=4.41.0
-# trl>=0.9.0          # TRL PPO / GRPO trainer
-# datasets>=2.19.0    # Hugging Face Datasets
-# accelerate>=0.30.0  # Multi-GPU / mixed precision
-
-# ──────────────────────────────────────────────
-# Unsloth (Google Colab / fast fine-tuning)
-# ──────────────────────────────────────────────
-# unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git
-# Install separately in Colab:
-#   !pip install "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
-
-# ──────────────────────────────────────────────
-# Hugging Face Hub (model push / pull)
-# ──────────────────────────────────────────────
-# huggingface_hub>=0.23.0
-
-# Provider integrations (future, optional)
+# Core Dependencies
+tqdm>=4.66.0
+numpy>=1.26.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+PyYAML>=6.0.1
 requests>=2.32.0
 
-# Hugging Face local model inference (optional but recommended for Spaces)
+# API / Serving (OpenEnv standard)
+fastapi>=0.111.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
+
+# Future ML Training (Optional)
 # torch>=2.3.0
 # transformers>=4.41.0
+# trl>=0.9.0
+# datasets>=2.19.0
+# accelerate>=0.30.0
