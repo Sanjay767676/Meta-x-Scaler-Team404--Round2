@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-04-25T08:42:31.075228",
+  "total_episodes": 1,
+  "coder_version": "weak_coder_v2",
+  "final_breaker_tier": 1,
+  "avg_coder_reward": -1.0,
+  "avg_breaker_reward": -1.2,
+  "avg_pass_rate": 0.2,
+  "avg_break_rate": 0.0,
+  "best_coder_reward": -1.0,
+  "worst_coder_reward": -1.0,
+  "coach_memory_summary": {
+    "total_lessons": 3,
+    "episodes_seen": 1,
+    "avg_coder_reward": -1.0,
+    "avg_breaker_reward": -1.2,
+    "recent_coach_notes": [
+      "Episode 1: Coder (weak_coder_v2) failed 4 test(s) at breaker 1 \u2192 review edge case handling",
+      "Episode 1: Coder (weak_coder_v2) failed 4 test(s) at breaker 1 \u2192 review edge case handling",
+      "Episode 1: Coder (weak_coder_v2) failed 4 test(s) at breaker 1 \u2192 review edge case handling"
+    ]
+  }
+}

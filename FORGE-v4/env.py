@@ -1,12 +1,16 @@
 # env.py
 # Main OpenEnv-style reinforcement learning environment for FORGE-v4.
-# Manages the interaction between the Coder Agent, Breaker Agent, and Sandbox.
+# Manages Coder Agent, Breaker Agent, Sandbox, Rewards, Memory, and Logging.
 
+import uuid
 from typing import Any
-from tasks import generate_task, generate_breaker_task
+
+from tasks import generate_task
 from sandbox import run_code_against_tests
 from rewards import coder_reward, breaker_reward
 from memory import CoachMemory
+from agents import BreakerAgent, coder_version_label
+from logger import log_step
 from config import STEPS_PER_EPISODE
 
 
@@ -15,29 +19,68 @@ class FORGEEnv:
     Two-agent adversarial environment for code generation tasks.
 
     Agents:
-        - Coder:   writes Python code to solve array-sorting tasks.
-        - Breaker: generates adversarial test cases to break the Coder's solution.
+        - Coder:   submits Python code defining solution(arr).
+        - Breaker: submits adversarial test cases via a BreakerAgent.
 
     Episode flow:
-        1. reset()           → returns the initial task state
-        2. step(action)      × STEPS_PER_EPISODE steps
-        3. Rewards assigned to both agents at each step
+        1. reset()               → returns initial state
+        2. step(action) × N     → coder vs breaker, rewards, memory, logs
+        3. done=True             → call reset() for next episode
 
-    Action format:
+    Action format passed to step():
         {
-            "coder_code":        str | None,   # Python source defining solution(arr)
-            "breaker_tests":     list | None,  # List of {"input": [...]} dicts
+            "coder_code":    str,   # Python source defining solution(arr)
+            "coder_version": str,   # label, e.g. "weak_coder_v1"
         }
+    The BreakerAgent is managed internally by the environment.
+
+    State returned by get_state() / reset() / step():
+        {
+            "task_id":              str,
+            "problem_description":  str,
+            "episode":              int,
+            "episode_step":         int,
+            "done":                 bool,
+            "coder_version":        str,
+            "current_tier":         int,
+            "recent_breaker_case":  list[int],
+            "pass_rate_history":    list[float],
+            "coach_memory_summary": dict,
+            "public_example":       dict,
+        }
+
+    step() returns:
+        {
+            "state":          dict,
+            "coder_reward":   dict,   # from rewards.coder_reward()
+            "breaker_reward": dict,   # from rewards.breaker_reward()
+            "done":           bool,
+            "info":           dict,   # diagnostics
+        }
+
+    Explicit step() flow:
+        1. Run coder code against hidden tests in sandbox
+        2. Run breaker tests against coder code in sandbox
+        3. Assign coder_reward and breaker_reward
+        4. Update coach memory with structured lesson
+        5. Log step metrics to logs/rewards.json
+        6. Advance breaker tier based on break_rate
+        7. Return next_state, rewards, done, info
     """
 
     def __init__(self, memory: CoachMemory | None = None):
-        self.memory = memory or CoachMemory()
-        self.episode: int = 0
+        self.memory        = memory or CoachMemory()
+        self.breaker       = BreakerAgent()
+        self.episode: int  = 0
         self.step_count: int = 0
         self.current_task: dict[str, Any] = {}
-        self.done: bool = True
-        self._last_coder_code: str = ""
-        self._last_coder_pass_rate: float = 0.0
+        self.done: bool    = True
+
+        # Tracked across the episode
+        self._coder_version: str       = "unknown"
+        self._pass_rate_history: list[float] = []
+        self._recent_breaker_case: list[int] = []
+        self._last_coder_pass_rate: float    = 0.0
 
     # ──────────────────────────────────────────────
     # Core env methods
@@ -45,38 +88,42 @@ class FORGEEnv:
 
     def reset(self) -> dict[str, Any]:
         """
-        Start a new episode.
+        Start a new episode. Generates a fresh task and resets counters.
 
         Returns:
-            Initial state dict containing the task prompt and public example.
+            Initial state dict.
         """
         self.episode += 1
         self.step_count = 0
-        self.done = False
-        self._last_coder_code = ""
+        self.done       = False
+
+        self._coder_version        = "unknown"
+        self._pass_rate_history    = []
+        self._recent_breaker_case  = []
         self._last_coder_pass_rate = 0.0
 
         self.current_task = generate_task()
+        self.current_task["task_id"] = str(uuid.uuid4())[:8]
 
-        state = self.get_state()
-        return state
+        return self.get_state()
 
     def step(self, action: dict[str, Any]) -> dict[str, Any]:
         """
         Advance the environment by one step.
 
         Args:
-            action: dict with optional keys:
-                "coder_code"    – Python source defining solution(arr)
-                "breaker_tests" – list of {"input": [...]} dicts
+            action: {
+                "coder_code":    str   — Python source defining solution(arr)
+                "coder_version": str   — human label for the coder strategy used
+            }
 
         Returns:
             {
-                "state":          current env state,
-                "coder_reward":   coder reward info dict,
-                "breaker_reward": breaker reward info dict,
-                "done":           bool (True when episode ends),
-                "info":           extra diagnostics,
+                "state":          dict — next observable state,
+                "coder_reward":   dict — coder reward breakdown,
+                "breaker_reward": dict — breaker reward breakdown,
+                "done":           bool,
+                "info":           dict — diagnostics,
             }
         """
         if self.done:
@@ -84,33 +131,66 @@ class FORGEEnv:
 
         self.step_count += 1
         coder_code    = action.get("coder_code", "")
-        breaker_tests = action.get("breaker_tests", [])
+        coder_version = action.get("coder_version", "unknown")
+        self._coder_version = coder_version
 
-        # ── Evaluate Coder ────────────────────────────────────────────────
-        coder_info = self._evaluate_coder(coder_code)
+        # ── 1. Get breaker tests for this step ───────────────────────────
+        breaker_tests = self.breaker.get_tests(n_per_tier=2)
+        if breaker_tests:
+            self._recent_breaker_case = breaker_tests[-1]["input"]
 
-        # ── Evaluate Breaker ──────────────────────────────────────────────
+        # ── 2 & 3. Run sandbox + compute rewards ──────────────────────────
+        coder_info  = self._evaluate_coder(coder_code)
         breaker_info = self._evaluate_breaker(coder_code, breaker_tests, coder_info)
 
-        # ── Log to Coach Memory ───────────────────────────────────────────
+        self._pass_rate_history.append(coder_info["pass_rate"])
+        self._last_coder_pass_rate = coder_info["pass_rate"]
+
+        # ── 4. Update coach memory with rich lesson ───────────────────────
         self.memory.add_lesson(
             episode=self.episode,
             agent="env",
             observation=(
                 f"Step {self.step_count}: "
-                f"coder pass_rate={coder_info['pass_rate']:.2f}, "
-                f"breaker break_rate={breaker_info['break_rate']:.2f}"
+                f"coder={coder_version}, "
+                f"pass_rate={coder_info['pass_rate']:.2f}, "
+                f"breaker_tier={self.breaker.current_tier}, "
+                f"break_rate={breaker_info['break_rate']:.2f}"
             ),
             coder_reward=coder_info["total_reward"],
             breaker_reward=breaker_info["total_reward"],
             extra={
-                "step": self.step_count,
-                "coder_pass_rate": coder_info["pass_rate"],
-                "breaker_break_rate": breaker_info["break_rate"],
+                "step":                self.step_count,
+                "coder_version":       coder_version,
+                "breaker_tier":        self.breaker.current_tier,
+                "coder_pass_rate":     coder_info["pass_rate"],
+                "fail_count":          coder_info["fail_count"],
+                "error_count":         coder_info["error_count"],
+                "timeout_count":       coder_info["error_count"],   # errors include timeouts
+                "breaker_break_rate":  breaker_info["break_rate"],
+                "recent_breaker_case": self._recent_breaker_case,
             },
         )
 
-        # ── Check done ────────────────────────────────────────────────────
+        # ── 5. Log step metrics ───────────────────────────────────────────
+        log_step(
+            episode=self.episode,
+            step=self.step_count,
+            coder_version=coder_version,
+            breaker_tier=self.breaker.current_tier,
+            coder_reward=coder_info["total_reward"],
+            breaker_reward=breaker_info["total_reward"],
+            pass_rate=coder_info["pass_rate"],
+            fail_count=coder_info["fail_count"],
+            error_count=coder_info["error_count"],
+            timeout_count=coder_info["error_count"],
+            break_rate=breaker_info["break_rate"],
+        )
+
+        # ── 6. Advance breaker tier ────────────────────────────────────────
+        self.breaker.update_tier(breaker_info["break_rate"], self.episode)
+
+        # ── 7. Check done + return ────────────────────────────────────────
         if self.step_count >= STEPS_PER_EPISODE:
             self.done = True
 
@@ -120,26 +200,32 @@ class FORGEEnv:
             "breaker_reward": breaker_info,
             "done":           self.done,
             "info": {
-                "episode":    self.episode,
-                "step":       self.step_count,
+                "episode":         self.episode,
+                "step":            self.step_count,
+                "coder_version":   coder_version,
+                "breaker_tier":    self.breaker.current_tier,
+                "breaker_tier_name": self.breaker.tier_name,
             },
         }
 
     def get_state(self) -> dict[str, Any]:
-        """
-        Return the current observable state of the environment.
-        """
+        """Return the current observable state of the environment."""
         return {
-            "episode":        self.episode,
-            "step":           self.step_count,
-            "done":           self.done,
-            "task_prompt":    self.current_task.get("prompt", ""),
-            "public_example": self.current_task.get("public_example", {}),
-            "last_pass_rate": self._last_coder_pass_rate,
+            "task_id":              self.current_task.get("task_id", ""),
+            "problem_description":  self.current_task.get("prompt", ""),
+            "episode":              self.episode,
+            "episode_step":         self.step_count,
+            "done":                 self.done,
+            "coder_version":        self._coder_version,
+            "current_tier":         self.breaker.current_tier,
+            "recent_breaker_case":  self._recent_breaker_case,
+            "pass_rate_history":    list(self._pass_rate_history),
+            "coach_memory_summary": self.memory.summary(),
+            "public_example":       self.current_task.get("public_example", {}),
         }
 
     # ──────────────────────────────────────────────
-    # Private helpers
+    # Private evaluation helpers
     # ──────────────────────────────────────────────
 
     def _evaluate_coder(self, code: str) -> dict[str, Any]:
@@ -147,17 +233,11 @@ class FORGEEnv:
         hidden_tests = self.current_task.get("hidden_tests", [])
 
         if not code or not hidden_tests:
-            # No code submitted — max penalty
-            dummy_results = [{"status": "error"} for _ in hidden_tests or [{}]]
-            info = coder_reward(dummy_results)
-        else:
-            results = run_code_against_tests(code, hidden_tests)
-            info = coder_reward(results)
+            dummy = [{"status": "error"} for _ in hidden_tests or [{}]]
+            return coder_reward(dummy)
 
-        # Cache for Breaker quality multiplier
-        self._last_coder_code = code
-        self._last_coder_pass_rate = info["pass_rate"]
-        return info
+        results = run_code_against_tests(code, hidden_tests)
+        return coder_reward(results)
 
     def _evaluate_breaker(
         self,
@@ -165,9 +245,8 @@ class FORGEEnv:
         breaker_tests: list[dict[str, Any]],
         coder_info: dict[str, Any],
     ) -> dict[str, Any]:
-        """Run the coder's code against the breaker's adversarial tests."""
+        """Run the coder's code against breaker adversarial tests."""
         if not coder_code or not breaker_tests:
-            # No submission from one of the agents
             dummy = [{"status": "pass"} for _ in breaker_tests or [{}]]
             return breaker_reward(dummy, coder_base_pass_rate=coder_info["pass_rate"])
 

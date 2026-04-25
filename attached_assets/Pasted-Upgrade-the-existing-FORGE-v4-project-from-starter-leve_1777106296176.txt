@@ -1,0 +1,163 @@
+Upgrade the existing FORGE-v4 project from starter-level skeleton into a stronger hackathon-ready backend prototype.
+
+Do NOT rebuild from scratch. Modify the current files intelligently.
+
+Current Issues To Fix:
+
+1. Placeholder Coder currently uses Python sorted() and is too perfect.
+2. Breaker attacks are static and too weak.
+3. Reward logs / metrics are not realistic enough.
+4. OpenEnv environment state/action flow needs stronger clarity.
+
+Your task is to upgrade the existing project with the following improvements:
+
+---
+
+## A. Replace Perfect Placeholder Coder
+
+Create multiple baseline coder strategies inside the project:
+
+1. weak_coder_v1
+
+* bubble sort style
+* slow for large arrays
+
+2. weak_coder_v2
+
+* handles normal arrays
+* fails on duplicates or negatives sometimes
+
+3. improving_coder
+
+* chooses stronger strategy based on episode count
+
+Use these instead of always using sorted().
+
+This is important so learning progress can be shown later.
+
+---
+
+## B. Upgrade Breaker into Tiered Adversarial System
+
+Implement breaker difficulty tiers.
+
+Tier 1:
+[]
+[1]
+[2,1]
+
+Tier 2:
+duplicates
+negative values
+already sorted
+reverse sorted
+
+Tier 3:
+large arrays
+many duplicates
+hard distributions
+
+Tier 4:
+boundary integer values
+stress tests
+
+Unlock next tier based on breaker success rate or episode progress.
+
+Breaker should dynamically choose test cases based on current tier.
+
+---
+
+## C. Add Real Metrics + Reward Logging
+
+Create logs folder outputs such as:
+
+logs/rewards.json
+logs/episodes.csv
+logs/summary.json
+
+Track:
+
+* episode number
+* coder reward
+* breaker reward
+* pass rate
+* current tier
+* number of failed tests
+* timeout count
+
+Also create helper functions to export metrics cleanly.
+
+---
+
+## D. Improve OpenEnv Style Clarity
+
+In env.py make state/action flow cleaner.
+
+Environment state should include:
+
+{
+task_id,
+problem_description,
+episode_step,
+coder_version,
+current_tier,
+recent_breaker_case,
+pass_rate_history,
+coach_memory_summary
+}
+
+step(action) should clearly:
+
+1. run coder
+2. run breaker
+3. sandbox evaluate
+4. assign rewards
+5. update memory
+6. log metrics
+7. return next_state
+
+---
+
+## E. Improve Coach Memory
+
+Store lessons like:
+
+Episode 4:
+Coder failed on duplicates
+Lesson: handle duplicate values safely
+
+Episode 8:
+Coder timed out on large arrays
+Lesson: avoid O(n²) for large arrays
+
+---
+
+## F. Keep Existing Structure
+
+Do not remove current modular structure.
+
+Files should still use:
+
+app.py
+env.py
+tasks.py
+rewards.py
+sandbox.py
+memory.py
+trainer.py
+config.py
+
+---
+
+## G. Final Result Needed
+
+After modifications, python app.py should run successfully and show:
+
+* coder version used
+* breaker tier used
+* test result summary
+* rewards
+* logs updated
+* coach lessons updated
+
+Keep code clean, modular, production-ready, and easy for later VS Code + Copilot + Google Colab upgrades.

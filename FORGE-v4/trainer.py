@@ -1,47 +1,44 @@
 # trainer.py
-# Placeholder training loop hooks for FORGE-v4.
-# Ready for future TRL / Unsloth / Hugging Face integration.
+# Training loop for FORGE-v4.
+# Uses the real coder strategies and tiered BreakerAgent from agents.py.
+# Hook placeholders are ready for TRL / Unsloth / Hugging Face integration.
 
 from typing import Any, Callable
 from env import FORGEEnv
 from memory import CoachMemory
+from agents import get_coder_code, coder_version_label
+from logger import log_episode, update_summary
 from config import MAX_EPISODES, STEPS_PER_EPISODE
 
 
 # ──────────────────────────────────────────────
-# Placeholder agent policy functions
+# Built-in coder policies
 # ──────────────────────────────────────────────
 
-def default_coder_policy(state: dict[str, Any]) -> str:
+def make_coder_policy(version: str) -> Callable[[dict[str, Any]], dict[str, str]]:
     """
-    Placeholder Coder policy.
+    Factory: return a coder policy function for the given version name.
 
-    In production this will call a fine-tuned LLM (e.g. via TRL/Unsloth) to
-    generate Python code from the task prompt.
+    The returned callable takes a state dict and returns an action dict:
+        {"coder_code": str, "coder_version": str}
 
-    Currently returns a trivial reference solution so the environment runs.
+    Args:
+        version: "weak_coder_v1" | "weak_coder_v2" | "improving_coder"
     """
-    # TODO: Replace with LLM inference call
-    return "def solution(arr):\n    return sorted(arr)\n"
+    def policy(state: dict[str, Any]) -> dict[str, str]:
+        episode = state.get("episode", 1)
+        code    = get_coder_code(version, episode=episode)
+        return {"coder_code": code, "coder_version": version}
+    return policy
 
 
-def default_breaker_policy(state: dict[str, Any]) -> list[dict[str, Any]]:
-    """
-    Placeholder Breaker policy.
+# Convenience pre-built policies
+weak_coder_v1_policy    = make_coder_policy("weak_coder_v1")
+weak_coder_v2_policy    = make_coder_policy("weak_coder_v2")
+improving_coder_policy  = make_coder_policy("improving_coder")
 
-    In production this will call a fine-tuned adversarial LLM to generate
-    adversarial test cases from the task prompt.
-
-    Currently returns a fixed set of edge-case test inputs.
-    """
-    # TODO: Replace with adversarial LLM inference call
-    return [
-        {"input": [],                             "expected_output": []},
-        {"input": [1],                            "expected_output": [1]},
-        {"input": [3, 1, 2],                      "expected_output": [1, 2, 3]},
-        {"input": [-5, -1, -3],                   "expected_output": [-5, -3, -1]},
-        {"input": [0, 0, 0, 0],                   "expected_output": [0, 0, 0, 0]},
-    ]
+# Default used by app.py
+default_coder_policy    = improving_coder_policy
 
 
 # ──────────────────────────────────────────────
@@ -49,81 +46,133 @@ def default_breaker_policy(state: dict[str, Any]) -> list[dict[str, Any]]:
 # ──────────────────────────────────────────────
 
 def train(
-    coder_policy: Callable[[dict[str, Any]], str] = default_coder_policy,
-    breaker_policy: Callable[[dict[str, Any]], list[dict[str, Any]]] = default_breaker_policy,
+    coder_policy: Callable[[dict[str, Any]], dict[str, str]] = default_coder_policy,
     num_episodes: int = MAX_EPISODES,
     verbose: bool = True,
 ) -> dict[str, Any]:
     """
     Run the FORGE-v4 training loop.
 
+    The BreakerAgent is managed by the environment — it automatically tiers up
+    based on performance. Only the coder policy needs to be supplied here.
+
     Args:
-        coder_policy:   Callable(state) → Python source string.
-        breaker_policy: Callable(state) → list of test-case dicts.
-        num_episodes:   Number of training episodes to run.
-        verbose:        Print per-episode summaries when True.
+        coder_policy:  Callable(state) → {"coder_code": str, "coder_version": str}
+        num_episodes:  Number of episodes to run.
+        verbose:       Print per-episode summaries when True.
 
     Returns:
-        Training summary dict with per-episode reward histories.
+        Training summary dict.
     """
     memory = CoachMemory()
-    env = FORGEEnv(memory=memory)
+    env    = FORGEEnv(memory=memory)
 
     episode_history: list[dict[str, Any]] = []
 
+    # Aggregate accumulators for final summary
+    all_coder_rewards:   list[float] = []
+    all_breaker_rewards: list[float] = []
+    all_pass_rates:      list[float] = []
+    all_break_rates:     list[float] = []
+
     for ep in range(1, num_episodes + 1):
         state = env.reset()
-        episode_coder_rewards   = []
-        episode_breaker_rewards = []
+
+        ep_coder_rewards:   list[float] = []
+        ep_breaker_rewards: list[float] = []
+        ep_pass_rates:      list[float] = []
+        ep_fail_counts:     list[int]   = []
+        ep_error_counts:    list[int]   = []
+        ep_timeout_counts:  list[int]   = []
+        ep_break_rates:     list[float] = []
 
         for _ in range(STEPS_PER_EPISODE):
-            # ── Agent decisions ────────────────────────────────────────────
-            coder_code    = coder_policy(state)
-            breaker_tests = breaker_policy(state)
-
-            action = {
-                "coder_code":    coder_code,
-                "breaker_tests": breaker_tests,
-            }
-
-            # ── Environment step ───────────────────────────────────────────
+            action = coder_policy(state)
             result = env.step(action)
             state  = result["state"]
 
-            episode_coder_rewards.append(result["coder_reward"]["total_reward"])
-            episode_breaker_rewards.append(result["breaker_reward"]["total_reward"])
+            cr = result["coder_reward"]
+            br = result["breaker_reward"]
+
+            ep_coder_rewards.append(cr["total_reward"])
+            ep_breaker_rewards.append(br["total_reward"])
+            ep_pass_rates.append(cr["pass_rate"])
+            ep_fail_counts.append(cr["fail_count"])
+            ep_error_counts.append(cr["error_count"])
+            ep_timeout_counts.append(cr["error_count"])
+            ep_break_rates.append(br["break_rate"])
 
             if result["done"]:
                 break
 
         # ── Episode summary ────────────────────────────────────────────────
-        avg_cr = round(sum(episode_coder_rewards)   / len(episode_coder_rewards),   4)
-        avg_br = round(sum(episode_breaker_rewards) / len(episode_breaker_rewards), 4)
+        def avg(lst: list) -> float:
+            return round(sum(lst) / len(lst), 4) if lst else 0.0
 
         ep_summary = {
             "episode":              ep,
-            "avg_coder_reward":     avg_cr,
-            "avg_breaker_reward":   avg_br,
+            "coder_version":        action.get("coder_version", "unknown"),
+            "breaker_tier":         env.breaker.current_tier,
+            "avg_coder_reward":     avg(ep_coder_rewards),
+            "avg_breaker_reward":   avg(ep_breaker_rewards),
+            "avg_pass_rate":        avg(ep_pass_rates),
+            "avg_break_rate":       avg(ep_break_rates),
             "steps":                env.step_count,
         }
         episode_history.append(ep_summary)
 
+        # ── Log episode to CSV ─────────────────────────────────────────────
+        log_episode(
+            episode=ep,
+            coder_version=ep_summary["coder_version"],
+            breaker_tier=ep_summary["breaker_tier"],
+            avg_coder_reward=ep_summary["avg_coder_reward"],
+            avg_breaker_reward=ep_summary["avg_breaker_reward"],
+            avg_pass_rate=ep_summary["avg_pass_rate"],
+            total_fail_count=sum(ep_fail_counts),
+            total_error_count=sum(ep_error_counts),
+            total_timeout_count=sum(ep_timeout_counts),
+            avg_break_rate=ep_summary["avg_break_rate"],
+            steps=ep_summary["steps"],
+        )
+
+        # ── Accumulate for final summary ───────────────────────────────────
+        all_coder_rewards.extend(ep_coder_rewards)
+        all_breaker_rewards.extend(ep_breaker_rewards)
+        all_pass_rates.extend(ep_pass_rates)
+        all_break_rates.extend(ep_break_rates)
+
         if verbose:
+            label = coder_version_label(ep_summary["coder_version"], ep)
             print(
-                f"[Episode {ep:>4}/{num_episodes}]  "
-                f"Coder avg reward: {avg_cr:+.4f}  |  "
-                f"Breaker avg reward: {avg_br:+.4f}"
+                f"  [Ep {ep:>3}]  Coder: {label:<50}  "
+                f"pass={ep_summary['avg_pass_rate']:.2f}  "
+                f"reward={ep_summary['avg_coder_reward']:+.2f}  |  "
+                f"Breaker: {env.breaker.tier_name:<22}  "
+                f"break={ep_summary['avg_break_rate']:.2f}  "
+                f"reward={ep_summary['avg_breaker_reward']:+.2f}"
             )
 
-        # ── TRL / Unsloth hook placeholders ───────────────────────────────
+        # ── TRL / Unsloth hook ─────────────────────────────────────────────
         _on_episode_end(ep, ep_summary, memory)
 
-    training_summary = {
-        "total_episodes":      num_episodes,
-        "episode_history":     episode_history,
-        "memory_summary":      memory.summary(),
+    # ── Final summary JSON ────────────────────────────────────────────────
+    update_summary(
+        total_episodes=num_episodes,
+        coder_version=episode_history[-1]["coder_version"] if episode_history else "unknown",
+        final_breaker_tier=env.breaker.current_tier,
+        all_coder_rewards=all_coder_rewards,
+        all_breaker_rewards=all_breaker_rewards,
+        all_pass_rates=all_pass_rates,
+        all_break_rates=all_break_rates,
+        coach_memory_summary=memory.summary(),
+    )
+
+    return {
+        "total_episodes":  num_episodes,
+        "episode_history": episode_history,
+        "memory_summary":  memory.summary(),
     }
-    return training_summary
 
 
 # ──────────────────────────────────────────────
@@ -136,23 +185,20 @@ def _on_episode_end(
     memory: CoachMemory,
 ) -> None:
     """
-    Called at the end of every episode.
+    Called at end of every episode.
 
     TODO: Plug in TRL PPOTrainer / Unsloth model updates here.
     E.g.:
         trainer.step(queries, responses, rewards)
         model.save_pretrained(f"models/checkpoint-ep{episode}")
     """
-    pass  # placeholder
+    pass
 
 
-def _on_step_end(
-    step: int,
-    result: dict[str, Any],
-) -> None:
+def _on_step_end(step: int, result: dict[str, Any]) -> None:
     """
     Called after every environment step.
 
-    TODO: Plug in per-step reward logging (e.g. W&B, TensorBoard) here.
+    TODO: Plug in per-step reward logging (W&B, TensorBoard) here.
     """
-    pass  # placeholder
+    pass
