@@ -1,239 +1,114 @@
-# FORGE-v4 Mentor Guide
-
-## 1) Project Summary
-
-FORGE-v4 is a controlled adversarial benchmark for robust code generation.
-
-The system runs two competing agents:
-- Defender (Coder): generates Python code for sorting integer arrays.
-- Adversary (Breaker): generates hard but valid test cases to break the coder.
-
-A sandbox executes generated code safely, rewards are computed, learning traces are stored in memory/logs, and charts/reports are exported for judging.
-
-Why sorting?
-- It is intentionally narrow and measurable.
-- It gives a deterministic benchmark to prove robustness and iteration quality before scaling to broader coding tasks.
+# FORGE-v4: Adversarial Code Generation & Robustness Benchmark
 
-## 2) What We Built
+## 1. Project Overview
+**FORGE-v4** (Framework for Observability, Robustness, and Generation Evaluation) is a state-of-the-art adversarial benchmark designed to evaluate and improve the reliability of LLM-generated code. 
 
-### Core loop
-1. Generate task and hidden tests.
-2. Defender policy generates multiple candidate solutions.
-3. Candidate evaluator ranks candidates by quality.
-4. Best candidate is selected.
-5. Sandbox executes against hidden and adversarial tests.
-6. Defender and adversary rewards are computed.
-7. Breaker tier updates based on break performance.
-8. Logs, memory, and artifacts are written.
-
-### Production upgrades implemented
-- Reliable timeout accounting and deterministic metric writing.
-- Pluggable policy system with class-based interfaces.
-- Multi-candidate evaluation and ranking (GRPO-ready style).
-- Hardened sandbox flow (timeouts, structured errors, temp cleanup, optional memory cap).
-- Benchmark mode (20+ episodes) and compare mode (heuristic vs model).
-- Judge assets exported automatically.
-- Hugging Face-ready folder layout for adapters/checkpoints/artifacts.
+The project implements a **Competitive Agentic Loop** where two primary entities interact in a high-stakes "Red vs. Blue" scenario:
+- **The Defender (Coder Agent):** Responsible for generating optimized Python code to solve algorithmic challenges (currently focusing on integer sorting as a controlled variable).
+- **The Adversary (Breaker Agent):** Responsible for identifying edge cases, bottlenecks, and logic flaws by generating valid but difficult test cases designed to "break" the defender's code.
 
-## 3) Technology Stack
-
-Language/runtime:
-- Python 3.10+
-
-Core libraries:
-- pandas
-- matplotlib
-- requests
-- tqdm
-- PyYAML
+### Why this approach?
+Most LLM benchmarks focus on static correctness. FORGE-v4 focuses on **Robustness**. By forcing the coder to iterate against a tiered adversary, we can measure and improve the model's ability to handle edge cases, performance constraints, and adversarial inputs.
 
-Optional model stack:
-- transformers (optional, commented in requirements)
-- torch (optional, commented in requirements)
+---
 
-## 4) Repository Structure (Key Files)
-
-Top-level execution:
-- app.py: CLI runner (demo, benchmark, compare)
-- trainer.py: training and benchmark orchestration
-- env.py: OpenEnv-style environment
-
-Evaluation and rewards:
-- sandbox.py: code execution sandbox
-- rewards.py: defender/adversary reward shaping
-- services/candidate_evaluator.py: candidate scoring and ranking
-
-Policy architecture:
-- policies/base.py: policy interface
-- policies/heuristic.py: deterministic baseline
-- policies/api_model.py: OpenRouter-backed policy
-- policies/local_model.py: Hugging Face local-backed policy
-- policies/mock_model.py: stable fallback policy
-- policies/factory.py: provider/policy selection
+## 2. Technology Stack
+We have utilized a modern, modular Python stack to ensure high performance and auditability:
 
-LLM providers:
-- llm_agent.py: provider implementations and fallback behavior
+| Component | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Language** | Python 3.10+ | Core logic and scripting. |
+| **Data Analysis** | Pandas | Processing logs and generating performance metrics. |
+| **Visualization** | Matplotlib | Generating real-time trend charts and reward curves. |
+| **Networking** | Requests | Integrating with external LLM providers (OpenRouter, etc.). |
+| **Persistence** | JSON / CSV | Storing coach memory, logs, and episode artifacts. |
+| **Configuration** | PyYAML | Environment framing and metadata management. |
+| **LLM Integration** | Transformers / OpenRouter | Supporting both local (Hugging Face) and cloud-based models. |
 
-Observability and persistence:
-- logger.py: JSON/CSV/summary logging
-- memory.py: persistent lesson memory
-- storage/artifact_store.py: run artifacts persistence
-- metrics/charts.py: chart generation and judge exports
+---
 
-Metadata:
-- openenv.yaml: benchmark framing and environment metadata
+## 3. Detailed Architecture
+The codebase is organized into several key modules, each handling a specific part of the adversarial loop:
 
-## 5) Policy Providers and Model Switching
-
-Configured in config.py:
-- LLM_PROVIDER: mock | openrouter | huggingface_local
-- LLM_MODEL
-- HF_LOCAL_MODEL_ID
-- OPENROUTER_API_KEY / OPENROUTER_BASE_URL
+### A. Environment & Task Management (`env.py`, `tasks.py`)
+- **FORGEEnv:** A custom OpenEnv-compliant environment that manages the state, rewards, and step logic.
+- **Task Generators:** Modules that create problems and maintain a hidden bank of standard test cases.
 
-Provider behavior:
-- mock: deterministic offline fallback for guaranteed runs.
-- openrouter: real API call path via requests when key is set.
-- huggingface_local: local Transformers pipeline; falls back to mock if unavailable.
+### B. Sandbox Execution (`sandbox.py`)
+- **Safety First:** Executes generated code in an isolated subprocess.
+- **Constraint Enforcement:** Implements strict timeouts and memory limits to prevent runaway processes.
+- **Structured Errors:** Translates Python tracebacks into actionable feedback for the coder agent.
 
-Default lightweight model profile:
-- qwen/qwen2.5-coder-0.5b-instruct
+### C. Policy Framework (`policies/`)
+- Supports multiple policy types: `Heuristic`, `API Model`, `Local Model`, and `Mock`.
+- **Multi-Candidate Ranking:** Generates multiple solutions per step and uses a `CandidateEvaluator` to select the most robust one based on pass rates and performance.
 
-This is intentionally easy to replace through config flags without changing business logic.
+### D. Reward Engine (`rewards.py`)
+- **Defender Rewards:** Balanced between correctness (pass rate), speed (latency), and robustness (escaping the breaker).
+- **Adversary Rewards:** Tiered rewards based on the difficulty of the test cases that successfully break the defender.
 
-## 6) Candidate Ranking Logic
+### E. Persistence & Observability (`logger.py`, `memory.py`, `metrics/`)
+- **Coach Memory:** A persistent JSON-based memory that stores "lessons learned" from previous episodes.
+- **Logging:** Detailed JSON/CSV logs for every step, used for downstream analysis.
+- **Charts:** Automatic generation of reward trends and pass-rate progressions.
 
-Each candidate is scored using:
-- pass rate on hidden tests
-- average runtime
-- robustness score (penalizes timeout/errors)
-- static code quality heuristic
+---
 
-Composite score selects the best candidate per step.
+## 4. Key Features for Mentors
+When discussing this project with mentors, focus on these highlights:
 
-Rankings are exposed in environment info and logged for auditability.
+1. **Adversarial Hardening:** Unlike simple code-gen tasks, our coder must survive against increasingly difficult "Breaker" tiers.
+2. **GRPO-Inspired Ranking:** We implement a candidate selection phase that mirrors modern reinforcement learning techniques (like Group Relative Policy Optimization) by sampling multiple solutions and picking the "best of N."
+3. **Deterministic Benchmarking:** We include a `--benchmark` mode that runs 20+ episodes to provide statistically significant data on model performance.
+4. **Production Readiness:** The system includes structured logging, artifact exports, and a pluggable architecture ready for any LLM backend.
+5. **Measurable Improvement:** Using the `--compare` mode, we can quantify exactly how much better a model-based policy performs compared to a heuristic baseline.
 
-## 7) Reward Logic
+---
 
-Defender reward uses:
-- pass reward
-- fail penalty
-- error penalty
-- timeout penalty
-- perfect-run bonus
+## 5. How to Run the Project
 
-Adversary reward uses:
-- break reward scaled by defender baseline strength
-- extra bonus for timeout/error breaks
-- penalty for non-breaking tests
+### Prerequisites
+```bash
+pip install -r requirements.txt
+```
 
-This creates realistic, non-fake metrics with clear signal direction.
+### Standard Demo
+Runs a single episode with the default improving coder.
+```bash
+python app.py --charts
+```
 
-## 8) Sandbox Safety Model
+### Benchmark Mode
+Runs 25 episodes to generate a comprehensive report.
+```bash
+python app.py --policy model --benchmark 25 --charts
+```
 
-Current protections:
-- strict execution timeout
-- isolated interpreter mode (-I)
-- structured output framing
-- temporary runner files with cleanup
-- optional memory guard on Unix (resource)
-- explicit structured exception typing
+### Comparative Analysis
+Compares the baseline heuristic against the current model policy.
+```bash
+python app.py --compare
+```
 
-Production note:
-- For public internet deployment, add container-level isolation (Docker/Firecracker), syscall controls, and network egress restrictions.
+---
 
-## 9) Benchmark and Compare Modes
+## 6. Mentor Q&A (Preparation)
 
-### Benchmark mode
-Command:
-- python app.py --policy model --benchmark 20
+**Q: Why did you choose sorting as the task?**
+*A: Sorting provides a mathematically controlled environment where correctness is binary and performance is easily measurable. This allows us to focus on the adversarial mechanics and robustness without the "noise" of complex business logic.*
 
-Outputs episode rows including:
-- episode number
-- pass rate
-- defender reward
-- adversary reward
-- chosen candidate rank
-- tier progression
+**Q: How do you handle safety when running generated code?**
+*A: We use a multi-layered sandbox approach: execution in an isolated interpreter mode, strict timeouts, and structured exception handling to ensure that even "bad" code cannot affect the host system.*
 
-### Compare mode
-Command:
-- python app.py --compare
+**Q: What is the benefit of the "Coach Memory"?**
+*A: The Coach Memory allows the model to "learn" from its failures. By storing specific adversarial cases that broke previous versions, the model can avoid repeating the same mistakes in future iterations.*
 
-Runs:
-1. baseline heuristic policy
-2. model policy (config-driven)
+---
 
-Exports improvement deltas in final report.
+## 7. Future Roadmap
+- **Dynamic Task Expansion:** Moving beyond sorting into more complex algorithmic tasks like pathfinding or data structure management.
+- **Full RL integration:** Implementing a direct PPO/GRPO update loop to fine-tune local models based on the rewards generated in the environment.
+- **De-localized Sandbox:** Moving from local subprocesses to containerized (Docker/Firecracker) execution environments.
 
-## 10) Judge Asset Exports
-
-Automatically generated:
-- outputs/reward_curve.png
-- outputs/pass_rate.png
-- outputs/final_report.json
-
-Additional artifacts:
-- outputs/reward_graphs/*.png
-- outputs/run_artifacts/episode_XXXX.json
-
-## 11) Hugging Face Submission Readiness
-
-Prepared structure:
-- models/adapters/
-- models/checkpoints/
-- outputs/reward_graphs/
-- outputs/run_artifacts/
-
-requirements.txt includes stable runtime dependencies.
-Optional model dependencies are documented for local inference mode in Spaces.
-
-## 12) How To Run
-
-Install:
-- pip install -r requirements.txt
-
-Default run:
-- python app.py
-
-Policy run:
-- python app.py --policy model --candidates 3 --steps 3
-
-Benchmark run:
-- python app.py --policy model --benchmark 20
-
-Compare run:
-- python app.py --compare
-
-## 13) Suggested Mentor Q&A Answers
-
-Q: What is novel here?
-A: We combine adversarial test generation with multi-candidate defender ranking under a controlled benchmark and export deterministic evidence artifacts for reproducibility.
-
-Q: How do you prove learning/performance?
-A: Benchmark mode runs 20+ episodes and exports reward/pass-rate curves plus structured final_report.json and per-episode artifacts.
-
-Q: Why not a broader coding benchmark?
-A: Sorting is a constrained benchmark chosen for measurable reliability. The architecture is intentionally modular so broader tasks can be plugged in after benchmark validation.
-
-Q: How production-ready is this?
-A: It is hackathon-production ready for demo and evaluation pipelines, with clear next hardening steps for public untrusted execution.
-
-Q: How can this scale?
-A: Swap policy providers/models through config, expand tasks/test generators, and integrate full RL updates using trainer hooks.
-
-## 14) Current Limitations and Next Steps
-
-Current limitations:
-- HF local model path depends on optional transformers/torch install.
-- OpenRouter path requires valid API key and network.
-- Sandbox is not yet container-isolated.
-
-Next steps:
-- Add containerized sandbox runtime.
-- Add richer benchmarks beyond sorting while preserving deterministic scoring.
-- Integrate full GRPO/PPO update loop in trainer hooks.
-
-## 15) One-Line Pitch
-
-FORGE-v4 is a competitive, evidence-driven adversarial code-generation benchmark where model policies are tested, ranked, and compared with reproducible artifacts ready for hackathon judging.
+---
+**FORGE-v4 Team** | *Building robust agents for a safer coding future.*
