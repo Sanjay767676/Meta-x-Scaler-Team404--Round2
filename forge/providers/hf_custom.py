@@ -93,13 +93,15 @@ class HFCustomProvider:
         device = next(self._model.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
+        from transformers import GenerationConfig
+
+        gen_cfg = GenerationConfig(
+            max_new_tokens=self.max_new_tokens,
+            do_sample=False,
+            pad_token_id=self._tokenizer.pad_token_id,
+        )
         with torch.inference_mode():
-            out = self._model.generate(
-                **inputs,
-                max_new_tokens=self.max_new_tokens,
-                do_sample=False,
-                pad_token_id=self._tokenizer.pad_token_id,
-            )
+            out = self._model.generate(**inputs, generation_config=gen_cfg)
         gen_ids = out[0][inputs["input_ids"].shape[1] :]
         decoded = self._tokenizer.decode(gen_ids, skip_special_tokens=True).strip()
         if not decoded:

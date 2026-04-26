@@ -59,6 +59,8 @@ suggested_hardware: t4-small
 | **`CODE_PROVIDER_MODE`** | Unset = auto (`custom_hf` if CUDA else `offline`); or force `custom_hf` / `offline` / `auto` / … |
 | **`FORGE_DEFAULT_PROVIDER`** | Optional: force Gradio default dropdown (`custom_hf`, `offline`, …) |
 | **`FORGE_DETERMINISTIC_RESET`** | Set to **`1`** so **`POST /reset`** re-seeds RNG (harness reproducibility); omit for varied tasks |
+| **`FORGE_UI_CANDIDATES`** | Gradio benchmark/compare only — candidates per step (**default `1`** for faster `custom_hf`; raise for richer ranking) |
+| **`FORGE_HF_MAX_NEW_TOKENS`** | `custom_hf` completion cap (**default `256`**) — lower is faster for short coding tasks |
 
 ### OpenEnv HTTP API on the Hugging Face Space
 

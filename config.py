@@ -134,6 +134,9 @@ ROUTER_HF_TIMEOUT_SEC = float(os.getenv("ROUTER_HF_TIMEOUT_SEC", "90"))
 ROUTER_NIM_TIMEOUT_SEC = float(os.getenv("ROUTER_NIM_TIMEOUT_SEC", "90"))
 ROUTER_OPENROUTER_TIMEOUT_SEC = float(os.getenv("ROUTER_OPENROUTER_TIMEOUT_SEC", "90"))
 
+# Local HF (`custom_hf`): cap completion length — sorting solutions are short; lower = faster Space demos.
+FORGE_HF_MAX_NEW_TOKENS = max(64, int(os.getenv("FORGE_HF_MAX_NEW_TOKENS", "256")))
+
 # Dataset / evidence settings
 DPO_DATASET_FILE = "data/dpo_dataset.jsonl"
 MIN_DPO_PAIRS_TARGET = 480

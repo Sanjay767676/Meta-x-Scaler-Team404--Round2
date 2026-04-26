@@ -45,6 +45,7 @@ class InferenceRouter:
     def __init__(self) -> None:
         from config import (
             BASE_MODEL_ID,
+            FORGE_HF_MAX_NEW_TOKENS,
             HF_ADAPTER_REPO,
             HF_TOKEN,
             NIM_API_KEY,
@@ -63,6 +64,7 @@ class InferenceRouter:
             base_model_id=BASE_MODEL_ID,
             adapter_id=HF_ADAPTER_REPO,
             hf_token=HF_TOKEN or None,
+            max_new_tokens=FORGE_HF_MAX_NEW_TOKENS,
         )
         self._nim = NIMProvider(
             api_key=NIM_API_KEY,

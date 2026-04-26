@@ -71,6 +71,11 @@ def _benchmark_episode_cap() -> int:
     return 30 if _cuda_ready() else 5
 
 
+def _ui_candidates_per_step() -> int:
+    """Gradio-only: fewer generations per step so `custom_hf` returns while the queue is still open."""
+    return max(1, min(8, int(os.getenv("FORGE_UI_CANDIDATES", "1"))))
+
+
 def run_benchmark_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for benchmark mode."""
     ep_count = min(int(episodes), _benchmark_episode_cap())
@@ -82,6 +87,7 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
         episodes=ep_count,
         verbose=False,
         forge_provider=mode,
+        candidates_per_step=_ui_candidates_per_step(),
     )
     
     summary = report.get("summary", {})
@@ -113,6 +119,7 @@ def run_compare_ui(episodes, forge_provider_label: str):
         episodes=ep_count,
         verbose=False,
         forge_provider=mode,
+        candidates_per_step=_ui_candidates_per_step(),
     )
     
     model_summary = report.get("model", {})
@@ -165,7 +172,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 info=(
                     "**custom_hf** = local PyTorch + Hub weights on this machine (default on **GPU**). "
                     "**auto** = NIM → OpenRouter → optional local HF if **HF_TOKEN** is set → else offline. "
-                    "**offline** = no external APIs (CPU-friendly fallback)."
+                    "**offline** = no external APIs (CPU-friendly fallback). "
+                    "Gradio benchmarks use **1 candidate/step** by default (`FORGE_UI_CANDIDATES`); CLI/training use more."
                 ),
             )
         
