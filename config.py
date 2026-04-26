@@ -77,14 +77,18 @@ DEFAULT_CANDIDATES_PER_STEP = 3
 GLOBAL_RANDOM_SEED = 42
 
 # LLM provider configuration (future-ready)
-LLM_PROVIDER = "nim"  # mock | openrouter | hf_api | huggingface_local | nim
-LLM_MODEL = "qwen/qwen2.5-coder-0.5b-instruct"
-HF_LOCAL_MODEL_ID = "qwen/qwen2.5-coder-0.5b-instruct"
-NIM_MODEL = "meta/llama-3.1-405b-instruct"  # High-performance NIM choice
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_API_KEY = "" # Or set OPENROUTER_API_KEY env var
-HF_TOKEN = ""           # Or set HF_TOKEN env var
-NVIDIA_API_KEY = "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"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock")  # mock | openrouter | hf_api | huggingface_local | nim
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen2.5-coder-0.5b-instruct")
+HF_LOCAL_MODEL_ID = os.getenv("HF_LOCAL_MODEL_ID", "qwen/qwen2.5-coder-0.5b-instruct")
+NIM_MODEL = os.getenv("NIM_MODEL", "meta/llama-3.1-405b-instruct")  # High-performance NIM choice
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+HF_TOKEN = os.getenv("HF_TOKEN", "")
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+
+# Dataset / evidence settings
+DPO_DATASET_FILE = "data/dpo_dataset.jsonl"
+MIN_DPO_PAIRS_TARGET = 480
 
 
 def ensure_runtime_dirs() -> None:

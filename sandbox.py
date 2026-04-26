@@ -23,6 +23,28 @@ _RESULT_START = "__FORGE_RESULT_START__"
 _RESULT_END = "__FORGE_RESULT_END__"
 
 
+def _sandbox_env() -> dict[str, str]:
+    """Return a sanitized environment for untrusted code execution."""
+    allowed = {
+        "PATH",
+        "SYSTEMROOT",
+        "WINDIR",
+        "TMP",
+        "TEMP",
+        "HOME",
+        "USERPROFILE",
+        "LANG",
+        "LC_ALL",
+    }
+    env = {k: v for k, v in os.environ.items() if k in allowed}
+    env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    # Prevent accidental secret leakage into sandboxed candidate code.
+    for secret_key in ["OPENROUTER_API_KEY", "NVIDIA_API_KEY", "HF_TOKEN", "HF_API_KEY"]:
+        env.pop(secret_key, None)
+    return env
+
+
 def _build_batch_runner_script(code: str, test_cases: list[dict[str, Any]]) -> str:
     """Wrap candidate code with a loop that evaluates multiple test cases in one process."""
     return textwrap.dedent(
@@ -41,6 +63,24 @@ if resource is not None:
         resource.setrlimit(resource.RLIMIT_AS, (limit_bytes, limit_bytes))
     except Exception:
         pass
+
+# Restrict high-risk builtins/imports for this controlled sorting benchmark.
+import builtins as _builtins
+_orig_import = _builtins.__import__
+_allowed_imports = {{"math", "json", "time"}}
+
+def _guarded_import(name, *args, **kwargs):
+    root = name.split(".", 1)[0]
+    if root not in _allowed_imports:
+        raise ImportError(f"Import '{{name}}' is blocked in sandbox mode")
+    return _orig_import(name, *args, **kwargs)
+
+_builtins.__import__ = _guarded_import
+_builtins.open = lambda *a, **k: (_ for _ in ()).throw(PermissionError("open() disabled in sandbox"))
+_builtins.exec = lambda *a, **k: (_ for _ in ()).throw(PermissionError("exec() disabled in sandbox"))
+_builtins.eval = lambda *a, **k: (_ for _ in ()).throw(PermissionError("eval() disabled in sandbox"))
+_builtins.compile = lambda *a, **k: (_ for _ in ()).throw(PermissionError("compile() disabled in sandbox"))
+_builtins.input = lambda *a, **k: (_ for _ in ()).throw(PermissionError("input() disabled in sandbox"))
 
 # Candidate code
 {code}
@@ -137,7 +177,7 @@ def run_code_against_tests(code: str, tests: list[dict[str, Any]]) -> list[dict[
             capture_output=True,
             text=True,
             timeout=batch_timeout,
-            env={**os.environ, "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1"},
+            env=_sandbox_env(),
             cwd=os.getcwd(),
         )
         

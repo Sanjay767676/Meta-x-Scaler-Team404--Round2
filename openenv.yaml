@@ -3,6 +3,9 @@ version: 0.2.0
 runtime: python3.11
 entrypoint: app.py
 mode: adversarial-codegen
+reset: /reset
+step: /step
+state: /state
 
 benchmark:
   name: Controlled Adversarial Sorting Benchmark

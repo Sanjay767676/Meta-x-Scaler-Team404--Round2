@@ -35,7 +35,7 @@ async def step(action: Action):
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/state")
 async def get_state():

@@ -273,6 +273,7 @@ def run_benchmark_mode(
     verbose: bool = True,
 ) -> dict[str, Any]:
     """Run evidence benchmark and export judge assets."""
+    episodes = max(20, episodes)
     summary = train_with_policy_name(
         policy_name=policy_name,
         num_episodes=episodes,
@@ -307,7 +308,6 @@ def run_benchmark_mode(
     }
     assets = export_judge_assets(episodes=rows, final_report=final_report)
     final_report["assets"] = assets
-    export_judge_assets(episodes=rows, final_report=final_report)
     return final_report
 
 
@@ -481,8 +481,7 @@ def _on_episode_end(
 
 def _on_step_end(step: int, result: dict[str, Any]) -> None:
     """
-    Called after every environment step.
-
-    TODO: Plug in per-step reward logging (W&B, TensorBoard) here.
+    Callback executed after each environment step.
+    Can be used to attach external telemetry (e.g., Weights & Biases or TensorBoard).
     """
     pass

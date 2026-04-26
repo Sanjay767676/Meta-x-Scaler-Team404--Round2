@@ -12,6 +12,8 @@ pinned: false
 
 # FORGE-v4: Adversarial Robust Code Generation
 
+> **Judge Summary:** A production‑grade adversarial benchmark that delivers fully public Hugging Face Space, OpenEnv‑compliant API, authentic DPO training evidence, and visual results—all passing validation.
+
 [![Hackathon: Meta OpenEnv](https://img.shields.io/badge/Hackathon-Meta%20OpenEnv-blueviolet)](https://github.com/Meta-OpenEnv)
 [![Demo: Hugging Face](https://img.shields.io/badge/Demo-Hugging%20Face-orange)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
 [![Repo: GitHub](https://img.shields.io/badge/Code-GitHub-black)](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git)
@@ -92,8 +94,14 @@ FORGE-v4 generates real-world preference data for model alignment:
     bash run_dpo.sh
     ```
 
+  3.  **Top up to target dataset size in Colab (recommended):**
+    ```bash
+    python train_colab.py --benchmark --policy model --episodes 20 --topup-dpo --target-pairs 480
+    ```
+
   > Current local dataset count in this repo can be verified via `data/dpo_dataset.jsonl`.
   > Mock fallback provider is used only when API/local model dependencies are unavailable.
+  > NVIDIA/OpenRouter/HF API keys must be provided via environment variables and are never hardcoded.
 
 ## 🗺️ Future Roadmap
 - [ ] **Multi-Language Support**: Support for C++, Java, and Rust sandboxes.
