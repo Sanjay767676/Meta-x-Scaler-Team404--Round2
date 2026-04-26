@@ -1,0 +1,179 @@
+{
+  "assets": {
+    "final_report": "outputs\\final_report.json",
+    "loss_curve": "outputs\\loss_curve.png",
+    "pass_rate": "outputs\\pass_rate.png",
+    "reward_curve": "outputs\\reward_curve.png"
+  },
+  "episodes": 20,
+  "mode": "benchmark",
+  "policy": "model",
+  "rows": [
+    {
+      "adversary_reward": -2.0,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 1,
+      "pass_rate": 1.0,
+      "tier_progression": 2
+    },
+    {
+      "adversary_reward": -4.7,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 2,
+      "pass_rate": 1.0,
+      "tier_progression": 3
+    },
+    {
+      "adversary_reward": -8.3,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 3,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 4,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 5,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 6,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 7,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 8,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 9,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 10,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 11,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 12,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 13,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 14,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 15,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 16,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 17,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 18,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 19,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    },
+    {
+      "adversary_reward": -11.1,
+      "chosen_candidate_rank": 1.0,
+      "defender_reward": 13.0,
+      "episode": 20,
+      "pass_rate": 1.0,
+      "tier_progression": 4
+    }
+  ],
+  "summary": {
+    "avg_adversary_reward": -10.185,
+    "avg_defender_reward": 13.0,
+    "avg_pass_rate": 1.0,
+    "max_tier": 4
+  }
+}

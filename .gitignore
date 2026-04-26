@@ -17,6 +17,7 @@ env/
 
 # Data / runtime outputs (keep directories, ignore contents)
 data/*.json
+!data/dpo_dataset.jsonl
 logs/*.log
 logs/*.jsonl
 logs/*.json
@@ -25,9 +26,10 @@ models/*
 !models/.gitkeep
 outputs/*
 !outputs/.gitkeep
-!outputs/reward_curve.png
-!outputs/loss_curve.png
-!outputs/pass_rate.png
+!outputs/*.png
+!outputs/*.md
+!outputs/*.json
+
 
 # Jupyter / Colab
 .ipynb_checkpoints/
