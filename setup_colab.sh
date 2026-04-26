@@ -9,8 +9,9 @@ echo "------------------------------------------------------------"
 echo "[*] Updating pip..."
 python -m pip install --upgrade pip
 
-echo "[*] Installing core requirements..."
+echo "[*] Installing core + training requirements..."
 pip install -r requirements.txt
+pip install -r requirements-train.txt
 
 echo "[*] Installing Unsloth (Colab Optimized)..."
 # Using the specific Unsloth Colab installation command

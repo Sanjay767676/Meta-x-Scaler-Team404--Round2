@@ -1,11 +1,11 @@
-# FORGE-v4: Adversarial Code Generation Environment
-# Finalized requirements for CLI, Colab, and Hugging Face Spaces.
+# FORGE-v4 — default install (Hugging Face CPU Spaces, Gradio demo, API).
+# For training / local_model / HF custom weights, also install: pip install -r requirements-train.txt
 
 # OpenEnv (official framework — Meta / HF ecosystem)
-# Needs websockets>=15.1; use Gradio >=5.18 (see README Space sdk_version) so HF Space resolves deps.
+# Needs websockets>=15.1; use Gradio >=5.18 (see README Space sdk_version).
 openenv-core>=0.2.3
 
-# Core Dependencies
+# Core
 tqdm>=4.66.0
 numpy>=1.26.0
 pandas>=2.2.0
@@ -13,22 +13,11 @@ matplotlib>=3.8.0
 PyYAML>=6.0.1
 requests>=2.32.0
 python-dotenv>=1.0.1
-# HF Spaces also installs gradio[oauth]==sdk_version from README YAML — keep in sync with sdk_version.
+
+# HF Spaces installs gradio[oauth]==sdk_version from README YAML — keep sdk_version in sync.
 gradio>=5.18.0,<6
 
-# API / Serving — Gradio 5.25+ requires fastapi>=0.115.2 (<1.0)
+# API — Gradio 5.x needs fastapi>=0.115.2
 fastapi>=0.115.2,<1.0
 uvicorn>=0.30.0
 pydantic>=2.7.0
-
-# RL Training Layer (Unsloth + TRL)
-torch>=2.3.0
-transformers>=4.41.0
-trl>=0.9.4
-peft>=0.11.1
-datasets>=2.19.0
-accelerate>=0.30.0
-bitsandbytes>=0.43.1
-
-# Note: unsloth requires specific installation based on CUDA version.
-# See: https://github.com/unslothai/unsloth

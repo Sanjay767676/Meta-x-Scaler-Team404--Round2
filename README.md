@@ -9,6 +9,8 @@ sdk_version: 5.25.0
 python_version: 3.11
 app_file: app.py
 pinned: false
+# Hint for duplicators; does not upgrade your Space by itself. CPU-friendly demo (no PyTorch in requirements.txt).
+suggested_hardware: cpu-basic
 ---
 
 # FORGE-v4 — Adversarial self-improvement for robust code generation
@@ -35,11 +37,18 @@ pinned: false
 | **Command / security cheat sheet** | [guide.md](guide.md) |
 | **Video / slides** | Optional. Current submission uses the mini-blog requirement via [MINI_BLOG.md](MINI_BLOG.md). |
 
+### Hugging Face Space (CPU-only)
+
+- This repo’s **Space README** sets **`suggested_hardware: cpu-basic`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Pick CPU hardware in the Space Settings UI** if you are not on GPU.
+- **`requirements.txt`** is intentionally **light** (no PyTorch / bitsandbytes) so CPU Spaces **build and start** reliably.
+- For a stable demo on CPU, set Space secret **`CODE_PROVIDER_MODE=mock`** (or use **NIM** / **OpenRouter** keys so the router never loads local `custom_hf`). Loading **`Qwen2.5-Coder-1.5B` + LoRA** on free CPU is likely to **OOM or time out**.
+- Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
+
 ### NOTE 1 — Non‑negotiable submission requirements (checklist)
 
 | # | Requirement | FORGE-v4 |
 | :--: | :-- | :-- |
-| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Wrapper: [`env_openenv.py`](env_openenv.py) (`FORGEOpenEnvironment` subclasses `openenv.core.Environment`). Core loop remains [`env.py`](env.py) [`FORGEEnv`]. |
+| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Training extras in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
 | 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
 | 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
 | 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[MINI_BLOG.md](MINI_BLOG.md)** linked here; add **public YouTube or slide URL** in the table row when published. |
@@ -277,6 +286,9 @@ Deployment note: as of the latest verification, the Space URL is serving the Gra
 
 ```bash
 pip install -r requirements.txt
+# GPU / training / HF custom local weights (skip on HF CPU Space):
+pip install -r requirements-train.txt
+
 cp .env.example .env   # then edit — do not commit .env
 python app.py          # Gradio :7860
 python api_server.py   # OpenEnv API :8000
