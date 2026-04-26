@@ -1,7 +1,7 @@
 """Ordered inference router.
 
-* **auto:** nim → openrouter → mock only. **custom_hf is not in `auto`** — local PyTorch
-  loads are slow on CPU Spaces; pick **custom_hf** explicitly when you want the adapter.
+* **auto:** nim → openrouter → (optional **custom_hf** if `HF_TOKEN` / `HUGGING_FACE_HUB_TOKEN`
+  is set) → mock. Without a Hub token, local HF is skipped so CPU Spaces stay responsive.
 * **Explicit modes** call one provider (with fallback to mock where implemented).
 """
 
@@ -81,6 +81,7 @@ class InferenceRouter:
             "nim": ROUTER_NIM_TIMEOUT_SEC,
             "openrouter": ROUTER_OPENROUTER_TIMEOUT_SEC,
         }
+        self._include_hf_in_auto = bool((HF_TOKEN or "").strip())
 
     def generate(self, prompt: str, system_prompt: str = "", mode: str = "auto") -> LLMResponse:
         mode = (mode or "auto").strip().lower()
@@ -94,11 +95,16 @@ class InferenceRouter:
         if mode == "openrouter":
             return self._try_openrouter(prompt, system_prompt, fallback=True)
 
-        # auto: cloud APIs only, then mock. (custom_hf excluded — it can block minutes on CPU.)
-        for label, fn in (
+        # auto: cloud APIs first; local HF only if a Hub token is configured (still last before mock).
+        auto_steps: list[tuple[str, Callable[[], LLMResponse]]] = [
             ("nim", lambda: self._try_nim(prompt, system_prompt, fallback=False)),
             ("openrouter", lambda: self._try_openrouter(prompt, system_prompt, fallback=False)),
-        ):
+        ]
+        if self._include_hf_in_auto:
+            auto_steps.append(
+                ("custom_hf", lambda: self._try_hf(prompt, system_prompt, fallback=False)),
+            )
+        for label, fn in auto_steps:
             try:
                 return fn()
             except Exception as exc:  # noqa: BLE001

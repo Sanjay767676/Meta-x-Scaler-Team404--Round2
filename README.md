@@ -44,8 +44,16 @@ suggested_hardware: cpu-basic
 
 - This repo’s **Space README** sets **`suggested_hardware: cpu-basic`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Pick CPU hardware in the Space Settings UI** if you are not on GPU.
 - **`requirements.txt`** is intentionally **light** (no PyTorch / bitsandbytes) so CPU Spaces **build and start** reliably.
-- For a stable demo on CPU, set Space secret **`CODE_PROVIDER_MODE=mock`** (or use **NIM** / **OpenRouter** keys so the router never loads local `custom_hf`). Loading **`Qwen2.5-Coder-1.5B` + LoRA** on free CPU is likely to **OOM or time out**.
+- For a **CPU-only** Space, prefer Gradio provider **`mock`** or **`auto`** with **NIM / OpenRouter** keys; local **`custom_hf`** loads PyTorch and a 1.5B+LoRA stack and may **OOM or time out** on free CPU.
+- **Repository secrets:** names must match environment variables exactly (see table below). After adding or changing secrets, **restart the Space** (or trigger a rebuild) so the container picks them up.
 - Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
+
+| Space secret name | Used for |
+| :-- | :-- |
+| **`NIM_API_KEY`** or **`NVIDIA_API_KEY`** | NVIDIA NIM chat API (`auto` / **nim**) |
+| **`OPENROUTER_API_KEY`** | OpenRouter (`auto` / **openrouter**) |
+| **`HF_TOKEN`** or **`HUGGING_FACE_HUB_TOKEN`** | Gated Hub downloads; if set, **`auto`** may try **custom_hf** after cloud APIs |
+| **`CODE_PROVIDER_MODE`** | Default when code does not pass a provider (optional; Gradio dropdown still overrides for benchmarks) |
 
 ### OpenEnv HTTP API on the Hugging Face Space
 
@@ -147,7 +155,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
 2. **Tiered Breaker** — difficulty ramps with performance.  
 3. **CoachMemory** — failures become lessons, not noise.  
 4. **Real post-training path** — preference data from the env feeds repeated short **DPO / GRPO** adapter workflows on a small coder model.  
-5. **Inference router** — **`auto`** order: **NIM → OpenRouter → deterministic mock** (no local HF in `auto`; pick **`custom_hf`** only when you want the adapter). Use **`mock`** alone for instant CPU demos.
+5. **Inference router** — **`auto`** order: **NIM → OpenRouter → custom HF (only if `HF_TOKEN` is set) → deterministic mock**. Use **`mock`** alone for instant CPU demos; omit **`HF_TOKEN`** in Spaces if you do not want `auto` to attempt local HF.
 
 ---
 
@@ -264,7 +272,7 @@ Configured in **`config.py`** / **`.env`** (see **`.env.example`**). **Never com
 | 3 | **`openrouter`** | OpenRouter chat completions |
 | 4 | **`mock`** | Deterministic `solution(arr)` → `sorted(arr)` (offline guarantee) |
 
-**Modes:** `mock` (default, instant), `auto` (NIM → OpenRouter → mock, **skips local HF**), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **mock**. CLI example: `python train_colab.py --compare --forge-provider auto`.
+**Modes:** `mock` (default, instant), `auto` (NIM → OpenRouter → optional HF if Hub token → mock), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **mock**. CLI example: `python train_colab.py --compare --forge-provider auto`.
 
 For training, our intended workflow is different from inference routing: we default to a **small local base model with 4-bit LoRA adapters** so we can complete many successful runs in limited compute.
 
