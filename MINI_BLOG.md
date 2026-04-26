@@ -1,47 +1,47 @@
-# 🛡️ FORGE-v4: Building the "Immune System" for AI Code Generation
+# FORGE-v4 Mini Blog: From Fragile Code to Adversarial Robustness
 
-### The Silent Crisis in AI Coding
-We've all seen it: an AI writes a perfect "Quick Sort" in seconds. But what happens when you give that same code an array of 10,000 duplicate zeros? Or a list of mixed large negatives? Often, the AI's "perfect" code crashes, enters an infinite loop, or returns incorrect results. 
+## The story in one line
+FORGE-v4 trains a coding agent to survive adversarial edge cases by making it fight a breaker, learn from failures, and improve over repeated reward-driven episodes.
 
-Standard benchmarks measure **capability**. We built **FORGE-v4** to measure **robustness**.
+## Why we built this
+Most coding models look good on clean examples and then fail on real inputs: negatives, duplicates, boundary values, and timeout-prone cases. We wanted an environment where failure is explicit, measurable, and useful for training.
 
----
+## The journey
+### Chapter 1: baseline confidence, hidden fragility
+We started with a defender that often passed easy tests but broke under stress tiers. That gave us a critical signal: average correctness is not robustness.
 
-## ⚔️ The Concept: Adversarial Red-Teaming
-FORGE-v4 isn't just a static test suite; it's a living environment. We implemented a **Red-vs-Blue** dynamic:
-- **The Defender (Blue Team)**: Our Coder agent tries to solve sorting tasks correctly.
-- **The Adversary (Red Team)**: Our Breaker agent actively searches for the Coder's "blind spots."
+### Chapter 2: breaker escalation
+We added a tiered breaker that progressively attacked blind spots. The environment moved from simple lists to harder adversarial distributions.
 
-As the Coder improves, the Breaker escalates. It progresses through **4 Tiers of difficulty**—from basic lists to extreme boundary values and stress tests. This tiered red-teaming ensures that the model isn't just memorizing common patterns, but actually hardening its logic.
+### Chapter 3: memory as improvement engine
+CoachMemory converted repeated failure patterns into structured lessons. Instead of forgetting mistakes each episode, the loop made mistakes actionable.
 
----
+### Chapter 4: measurable training loop
+We used benchmark/compare runs to produce reward and pass-rate evidence, exported preference pairs, and connected that to a small-model-first adapter training path.
 
-## 🧠 The Secret Sauce: CoachMemory
-One of the most innovative features of FORGE-v4 is the **CoachMemory feedback loop**. 
+## What changed after training cycles
+- Defender pass rate stabilized under tougher tiers.
+- Average defender reward improved versus baseline runs.
+- Breaker pressure remained high, but the defender failed less often on known edge patterns.
 
-In most training environments, a model fails, gets a low reward, and moves on. In FORGE-v4, every failure is analyzed by the "Coach." 
-*   Did the model fail on negatives? 
-*   Did it time out on large arrays? 
-*   Did it destroy duplicates? 
+## Evidence (committed outputs)
+### Reward trend
+![Reward curve](outputs/reward_curve.png)
 
-These insights are stored in persistent memory. In the next episode, the model reads these "lessons" and adapts its strategy. This mimics the human engineering process: **Mistake → Analysis → Correction.**
+### Pass-rate trend
+![Pass rate curve](outputs/pass_rate.png)
 
----
+### Loss-like training signal
+![Loss curve](outputs/loss_curve.png)
 
-## 📈 Results that Matter
-Our benchmarks show that while a baseline heuristic policy might have a high "average" pass rate (91%), it is easily broken by Tier 3 and Tier 4 attacks. 
+### Machine-readable benchmark summary
+- `outputs/final_report.json`
 
-Our **FORGE-v4 Model Policy** achieved:
-- **100% Pass Rate** across all adversarial tiers.
-- **+2.10 Reward Gain** over the baseline.
-- **Sustained Tier 4 Robustness**: It didn't just survive; it thrived under extreme pressure.
+## Deliverables
+- Hugging Face Space: https://huggingface.co/spaces/sanjay7676/Team404_FORGE
+- GitHub repository: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2
+- Colab notebook: https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb
+- YouTube demo placeholder: https://youtube.com/watch?v=YOUR_DEMO_VIDEO_ID
 
----
-
-## 🌍 Why This Matters
-As AI agents move from "writing scripts" to "building infrastructure," robustness is no longer optional. FORGE-v4 provides the framework to ensure that the code powering our world is not just smart, but **unbreakable**.
-
-**Try the demo:** [Hugging Face Space](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
-
----
-*Created with ❤️ for the Meta OpenEnv Hackathon by Team 404.*
+## Why this matters
+FORGE-v4 is designed to train coding behavior that is verifiable, harder to reward-hack, and more resilient under adversarial conditions. That is the capability gap we think matters most for real LLM deployment.

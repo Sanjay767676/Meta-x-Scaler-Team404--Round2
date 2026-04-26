@@ -1,3 +1,5 @@
+# Full stack: PyTorch, TRL, PEFT, etc. — large downloads (often 30–90+ min on first build).
+# Use only when you need training or local HF weights inside the image.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -13,11 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Slim image: Gradio + API + OpenEnv (no PyTorch). Builds in minutes — same stack as HF CPU Space.
-# For training inside Docker: docker build -f Dockerfile.train -t forge:train .
-COPY requirements.txt ./
+COPY requirements.txt requirements-train.txt ./
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements.txt -r requirements-train.txt
 
 COPY . .
 

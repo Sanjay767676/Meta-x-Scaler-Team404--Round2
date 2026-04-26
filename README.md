@@ -35,7 +35,7 @@ suggested_hardware: cpu-basic
 | **Training Colab (synced from GitHub)** | [FORGE_Training_Colab.ipynb on Colab](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
 | **Trained adapter** | [sanjay7676/forge-qwen-final](https://huggingface.co/sanjay7676/forge-qwen-final) |
 | **Command / security cheat sheet** | [guide.md](guide.md) |
-| **Video / slides** | Optional. Current submission uses the mini-blog requirement via [MINI_BLOG.md](MINI_BLOG.md). |
+| **Video / slides** | YouTube demo placeholder: https://youtube.com/watch?v=YOUR_DEMO_VIDEO_ID |
 
 ### Hugging Face Space (CPU-only)
 
@@ -256,6 +256,10 @@ Deployment note: as of the latest verification, the Space URL is serving the Gra
 
 **Repository:** [https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2)
 
+## 15.1 Demo video placeholder
+
+**YouTube (to publish before final submission):** https://youtube.com/watch?v=YOUR_DEMO_VIDEO_ID
+
 ---
 
 ## 16. Why judges should care
@@ -311,9 +315,16 @@ Anyone can `docker pull` a **public** image without logging in. `docker login` i
 
 ### Build locally, tag, and push to Docker Hub (one-time)
 
+**Fast image (default `Dockerfile`):** only `requirements.txt` — no PyTorch. Usually **a few minutes**. Good for demo, Gradio, and `CODE_PROVIDER_MODE=mock` (or API-backed providers).
+
+**Full training image:** [`Dockerfile.train`](Dockerfile.train) adds `requirements-train.txt` (PyTorch + CUDA wheels). Expect **tens of minutes to an hour+** on first build.
+
 ```bash
 cd /path/to/FORGE
 docker build -t forge:latest .
+
+# Optional: image with PyTorch / TRL / PEFT for training inside the container
+# docker build -f Dockerfile.train -t forge:train .
 
 # Log in (opens browser or prompts for password / access token)
 docker login -u sanjay767676
@@ -329,7 +340,7 @@ Use a [Docker Hub access token](https://docs.docker.com/docker-hub/access-tokens
 - **`forge-api`** → FastAPI OpenEnv server on `http://localhost:8000`
 - **`forge-ui`** → Gradio app on `http://localhost:7860`
 
-Files: [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml), [`.dockerignore`](.dockerignore)
+Files: [`Dockerfile`](Dockerfile) (slim), [`Dockerfile.train`](Dockerfile.train) (full), [`docker-compose.yml`](docker-compose.yml), [`.dockerignore`](.dockerignore)
 
 Build and run from this repo:
 
