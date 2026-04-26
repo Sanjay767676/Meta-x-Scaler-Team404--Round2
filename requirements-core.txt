@@ -1,5 +1,5 @@
 # FORGE-v4 — slim stack (Docker Hub image, CPU-only local runs, CI).
-# Hugging Face Spaces use root requirements.txt which includes this file plus PyTorch / HF inference.
+# Hugging Face Spaces: use flat requirements.txt in repo root (Spaces only mount that one file).
 
 # OpenEnv (official framework — Meta / HF ecosystem)
 # Needs websockets>=15.1; use Gradio >=5.18 (see README Space sdk_version).

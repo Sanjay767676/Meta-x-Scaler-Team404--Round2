@@ -1,7 +1,25 @@
-# FORGE-v4 — default install for Hugging Face Spaces (T4 GPU: local HF inference + Gradio + API).
-# Slim installs: use requirements-core.txt only (see Dockerfile).
+# FORGE-v4 — single-file install for Hugging Face Spaces (build mounts ONLY this file).
+# Docker slim image uses requirements-core.txt instead (see Dockerfile).
 
--r requirements-core.txt
+# OpenEnv (official framework — Meta / HF ecosystem)
+openenv-core>=0.2.3
+
+# Core
+tqdm>=4.66.0
+numpy>=1.26.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+PyYAML>=6.0.1
+requests>=2.32.0
+python-dotenv>=1.0.1
+
+# Gradio — keep sdk_version in README YAML in sync
+gradio>=5.18.0,<6
+
+# API
+fastapi>=0.115.2,<1.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
 
 # Local Hugging Face inference (custom_hf on GPU Spaces)
 torch>=2.3.0

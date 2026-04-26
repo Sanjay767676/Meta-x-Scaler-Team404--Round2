@@ -46,7 +46,7 @@ suggested_hardware: t4-small
 ### Hugging Face Space (GPU — T4 recommended)
 
 - This repo’s **Space README** sets **`suggested_hardware: t4-small`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Enable a T4 (or better) GPU** in the Space **Settings → Hardware** so **`custom_hf`** can load PyTorch and Hub weights on-device.
-- **`requirements.txt`** includes **`requirements-core.txt`** plus **PyTorch / `transformers` / PEFT / TRL** so **`custom_hf`** is the default path when **CUDA** is visible (real local inference, not a stub).
+- **`requirements.txt`** is one **flat** file (OpenEnv + Gradio + **PyTorch / `transformers` / PEFT / TRL**) so the Space builder can `pip install -r requirements.txt` without extra includes — required because HF only mounts this file into the build. **`requirements-core.txt`** is the **slim** set used by **`Dockerfile`** only.
 - **CPU-only duplicates:** switch hardware to **CPU** in Space Settings and use Gradio provider **`offline`** or API-only keys via **`auto`** (`NIM` / `OpenRouter`); **`custom_hf`** without a GPU is not supported in this layout.
 - **Repository secrets:** names must match environment variables exactly (see table below). After adding or changing secrets, **restart the Space** (or trigger a rebuild) so the container picks them up.
 - Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
@@ -89,7 +89,7 @@ curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
 
 | # | Requirement | FORGE-v4 |
 | :--: | :-- | :-- |
-| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements-core.txt`](requirements-core.txt) (pulled via [`requirements.txt`](requirements.txt)). Training overlap in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
+| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt) (Space) and [`requirements-core.txt`](requirements-core.txt) (slim Docker). Training overlap in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
 | 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
 | 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
 | 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[BLOG.md](BLOG.md)** plus **[Space Discussions](https://huggingface.co/spaces/sanjay7676/Team404_FORGE/discussions)** for an on-Hub writeup; add **public YouTube or slide URL** in the judge table when published. |
