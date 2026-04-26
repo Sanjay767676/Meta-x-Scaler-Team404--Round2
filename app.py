@@ -2,6 +2,7 @@ import os
 import json
 import gradio as gr
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import Any, Dict
 from fastapi import FastAPI
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
@@ -9,6 +10,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from trainer import run_benchmark_mode, run_compare_mode
 from memory import CoachMemory
 from metrics.charts import generate_charts
+from metrics.ui_mock import install_mock_charts_to_outputs, load_mock_ui_summary
 from config import LOG_SUMMARY_FILE, REWARD_GRAPHS_DIR, OUTPUTS_DIR
 from api_server import app as api_app
 
@@ -87,6 +89,63 @@ def _ui_max_steps_for_gradio() -> int | None:
         return 2
 
 
+def _ui_run_timeout_sec(*, compare: bool = False) -> float | None:
+    """Seconds before Gradio swaps in bundled charts; ``None`` = wait indefinitely."""
+    raw = os.getenv("FORGE_UI_RUN_TIMEOUT_SEC", "120").strip()
+    if raw.lower() in ("0", "", "off", "none", "disable", "false"):
+        return None
+    try:
+        base = float(raw)
+    except ValueError:
+        base = 120.0
+    if base <= 0:
+        return None
+    if not compare:
+        return base
+    mult_raw = os.getenv("FORGE_UI_COMPARE_TIMEOUT_MULT", "2").strip()
+    try:
+        mult = float(mult_raw)
+    except ValueError:
+        mult = 2.0
+    return base * max(1.0, mult)
+
+
+def _run_with_timeout(fn, timeout_sec: float | None):
+    """Run ``fn()`` and return ``(result, ok, err_kind)``; pool is shut down with ``wait=False``."""
+    if timeout_sec is None:
+        try:
+            return fn(), True, None
+        except Exception as exc:  # noqa: BLE001 — UI resilience
+            return None, False, str(exc)
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(fn)
+    try:
+        return future.result(timeout=timeout_sec), True, None
+    except FuturesTimeoutError:
+        return None, False, "timeout"
+    except Exception as exc:  # noqa: BLE001
+        return None, False, str(exc)
+    finally:
+        executor.shutdown(wait=False)
+
+
+def _fallback_ui_assets(err_kind: str | None) -> Dict[str, Any]:
+    """Bundled PNGs + fixed ``summary.json`` so the UI closes without waiting on the tester."""
+    if err_kind == "timeout":
+        gr.Warning(
+            "This run exceeded FORGE_UI_RUN_TIMEOUT_SEC. Showing bundled illustrative charts and "
+            "fixed summary numbers from assets/mock_ui (not from this session). A slow job may still "
+            "be running in the background."
+        )
+    else:
+        gr.Warning(
+            f"Benchmark run failed ({err_kind}). Showing bundled illustrative charts and fixed "
+            "summary numbers from assets/mock_ui."
+        )
+    install_mock_charts_to_outputs(OUTPUTS_DIR)
+    return load_mock_ui_summary()
+
+
 def run_benchmark_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for benchmark mode."""
     ep_count = min(int(episodes), _benchmark_episode_cap())
@@ -99,18 +158,25 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
             "(environment and rewards are still real; no local Hub weight load)."
         )
         mode = "offline"
-    report = run_benchmark_mode(
-        policy_name="model",
-        episodes=ep_count,
-        verbose=False,
-        forge_provider=mode,
-        candidates_per_step=_ui_candidates_per_step(),
-        max_steps=_ui_max_steps_for_gradio(),
-    )
-    
-    summary = report.get("summary", {})
-    generate_charts() # Update trends too
-    lessons = get_memory_lessons()
+
+    def _benchmark_job():
+        return run_benchmark_mode(
+            policy_name="model",
+            episodes=ep_count,
+            verbose=False,
+            forge_provider=mode,
+            candidates_per_step=_ui_candidates_per_step(),
+            max_steps=_ui_max_steps_for_gradio(),
+        )
+
+    report, ok, err = _run_with_timeout(_benchmark_job, _ui_run_timeout_sec(compare=False))
+    if not ok:
+        summary = _fallback_ui_assets(err)
+        lessons = get_memory_lessons()
+    else:
+        summary = report.get("summary", {})
+        generate_charts()  # Update trends too
+        lessons = get_memory_lessons()
     
     # Paths for Gradio (as requested by user)
     reward_path = os.path.join(OUTPUTS_DIR, "reward_curve.png")
@@ -138,18 +204,25 @@ def run_compare_ui(episodes, forge_provider_label: str):
             "(environment and rewards are still real; no local Hub weight load)."
         )
         mode = "offline"
-    report = run_compare_mode(
-        model_policy_name="model",
-        episodes=ep_count,
-        verbose=False,
-        forge_provider=mode,
-        candidates_per_step=_ui_candidates_per_step(),
-        max_steps=_ui_max_steps_for_gradio(),
-    )
-    
-    model_summary = report.get("model", {})
-    generate_charts()
-    lessons = get_memory_lessons()
+
+    def _compare_job():
+        return run_compare_mode(
+            model_policy_name="model",
+            episodes=ep_count,
+            verbose=False,
+            forge_provider=mode,
+            candidates_per_step=_ui_candidates_per_step(),
+            max_steps=_ui_max_steps_for_gradio(),
+        )
+
+    report, ok, err = _run_with_timeout(_compare_job, _ui_run_timeout_sec(compare=True))
+    if not ok:
+        model_summary = _fallback_ui_assets(err)
+        lessons = get_memory_lessons()
+    else:
+        model_summary = report.get("model", {})
+        generate_charts()
+        lessons = get_memory_lessons()
     
     # Paths for Gradio (as requested by user)
     reward_path = os.path.join(OUTPUTS_DIR, "reward_curve.png")
@@ -198,7 +271,8 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                     "**custom_hf** = local PyTorch + Hub weights on **GPU** only; on CPU it automatically uses **offline** baseline. "
                     "**auto** = NIM → OpenRouter → optional local HF if **HF_TOKEN** is set → else offline. "
                     "**offline** = deterministic baseline (no Hub load; fast on CPU). "
-                    "Gradio uses **`FORGE_UI_CANDIDATES`** (default 1) and **`FORGE_UI_STEPS`** (default 2 steps/episode; set `full` for config default). CLI/training use full settings."
+                    "Gradio uses **`FORGE_UI_CANDIDATES`** (default 1) and **`FORGE_UI_STEPS`** (default 2 steps/episode; set `full` for config default). "
+                    "If **`FORGE_UI_RUN_TIMEOUT_SEC`** is exceeded, the UI shows bundled **`assets/mock_ui`** charts and fixed summary numbers. CLI/training use full settings."
                 ),
             )
         
