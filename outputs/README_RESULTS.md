@@ -1,12 +1,12 @@
 # FORGE-v4 Benchmark Results
 
 ## 1. Executive Summary
-The FORGE-v4 benchmark evaluated the robustness of the **model** (Provider: mock) against an adversarial **Breaker** agent.
+The FORGE-v4 benchmark evaluated the robustness of the **model** (inference: `auto`) against an adversarial **Breaker** agent.
 
 | Metric | Baseline (Heuristic) | Model Policy | Improvement |
 | :--- | :--- | :--- | :--- |
-| **Avg Pass Rate** | 76.00% | 100.00% | **+24.00%** |
-| **Avg Defender Reward** | 7.40 | 13.00 | **+5.60** |
+| **Avg Pass Rate** | 91.00% | 100.00% | **+9.00%** |
+| **Avg Defender Reward** | 10.90 | 13.00 | **+2.10** |
 | **Max Breaker Tier** | Tier 4 | Tier 4 | **+0** |
 
 ## 2. Key Insights
@@ -15,11 +15,11 @@ The FORGE-v4 benchmark evaluated the robustness of the **model** (Provider: mock
 - **Tier Progression**: The model successfully unlocked harder adversarial tiers, proving technical depth.
 
 ## 3. Top Lessons Learned (from CoachMemory)
-- Episode 4: Strong performance (pass_rate=1.00) [mock] → breaker should escalate tier
-- Episode 4: Strong performance (pass_rate=1.00) [mock] → breaker should escalate tier
-- Episode 5: Strong performance (pass_rate=1.00) [mock] → breaker should escalate tier
-- Episode 5: Strong performance (pass_rate=1.00) [mock] → breaker should escalate tier
-- Episode 5: Strong performance (pass_rate=1.00) [mock] → breaker should escalate tier
+- Episode 19: Strong performance (pass_rate=1.00) [model] → breaker should escalate tier
+- Episode 19: Strong performance (pass_rate=1.00) [model] → breaker should escalate tier
+- Episode 20: Strong performance (pass_rate=1.00) [model] → breaker should escalate tier
+- Episode 20: Strong performance (pass_rate=1.00) [model] → breaker should escalate tier
+- Episode 20: Strong performance (pass_rate=1.00) [model] → breaker should escalate tier
 
 ## 4. Judge's Narrative (Innovation & Technical Depth)
 - **Problem Statement**: Standard sorting is easy, but robust sorting under adversarial pressure is a foundational challenge for production-grade coding agents.
