@@ -10,30 +10,50 @@ build/
 .eggs/
 *.whl
 
-# Virtual environments
+# Virtual env
+
 venv/
 .venv/
 env/
 
-# Data / runtime outputs (keep directories, ignore contents)
+# Data
 data/*.json
 !data/dpo_dataset.jsonl
-logs/*.log
-logs/*.jsonl
-logs/*.json
-logs/*.csv
-# models/*
-# !models/.gitkeep
+
+# Logs (judge evidence only)
+logs/*
+!logs/summary.json
+!logs/episodes.csv
+
+# Models (avoid heavy artifacts)
+models/*
+!models/.gitkeep
+
+# Outputs / Evidence (keep only lightweight judge-facing artifacts)
 outputs/*
 !outputs/.gitkeep
+!outputs/reward_curve.png
+!outputs/pass_rate.png
+!outputs/loss_curve.png
+!outputs/final_report.json
+!outputs/README_RESULTS.md
+!outputs/TRAINING_REPORT.md
 !outputs/*.png
+!outputs/*.jpg
 !outputs/*.md
 !outputs/*.json
 
+# Keep optional trend charts if generated
+!outputs/*trend*.png
+!outputs/tier_progression.png
 
-# Jupyter / Colab
-.ipynb_checkpoints/
+# Explicitly ignore bulky nested runtime artifacts
+outputs/run_artifacts/
+outputs/reward_graphs/
+
+# Notebook (keep one proof notebook)
 *.ipynb
+!FORGE_Training_Colab.ipynb
 
 # IDE
 .vscode/
