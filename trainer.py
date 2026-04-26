@@ -8,7 +8,8 @@ import uuid
 from typing import Any, Callable
 
 from agents import coder_version_label, get_coder_code
-from config import CHECKPOINT_FILE, CODE_PROVIDER_MODE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, STEPS_PER_EPISODE, ensure_runtime_dirs
+import config
+from config import CHECKPOINT_FILE, CODE_PROVIDER_MODE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, ensure_runtime_dirs
 from env import FORGEEnv
 from logger import log_episode, update_summary, write_episode_report
 from metrics.charts import export_judge_assets
@@ -55,11 +56,13 @@ default_policy = build_policy("heuristic", strategy="improving_coder")
 def run_episode(
     env: FORGEEnv,
     coder_policy: Callable[[dict[str, Any]], dict[str, str]] | CoderPolicy,
-    max_steps: int = STEPS_PER_EPISODE,
+    max_steps: int | None = None,
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
 ) -> dict[str, Any]:
     """Run one complete episode and return aggregated metrics."""
     state = env.reset()
+
+    step_limit = max_steps if max_steps is not None else config.STEPS_PER_EPISODE
 
     coder_version = "unknown"
     coder_rewards: list[float] = []
@@ -72,7 +75,7 @@ def run_episode(
     candidate_counts: list[int] = []
     chosen_candidate_ranks: list[int] = []
 
-    for _ in range(max_steps):
+    for _ in range(step_limit):
         if hasattr(coder_policy, "generate_candidates"):
             generated = coder_policy.generate_candidates(state, num_candidates=candidates_per_step)  # type: ignore[attr-defined]
             candidate_solutions = [candidate.code for candidate in generated if candidate.code.strip()]
@@ -153,6 +156,7 @@ def train_defender(
     num_episodes: int = MAX_EPISODES,
     verbose: bool = True,
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
+    max_steps: int | None = None,
 ) -> dict[str, Any]:
     """Run defender-focused training where environment controls breaker tiers."""
     ensure_runtime_dirs()
@@ -177,6 +181,7 @@ def train_defender(
         episode_summary = run_episode(
             env=env,
             coder_policy=coder_policy,
+            max_steps=max_steps,
             candidates_per_step=candidates_per_step,
         )
         episode_history.append(episode_summary)
@@ -256,6 +261,7 @@ def train_with_policy_name(
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     memory: CoachMemory | None = None,
     forge_provider: str | None = None,
+    max_steps: int | None = None,
 ) -> dict[str, Any]:
     """Convenience helper for selecting a policy by name."""
     policy = build_policy(policy_name, memory=memory, forge_provider=forge_provider)
@@ -264,6 +270,7 @@ def train_with_policy_name(
         num_episodes=num_episodes,
         verbose=verbose,
         candidates_per_step=candidates_per_step,
+        max_steps=max_steps,
     )
 
 
@@ -273,6 +280,7 @@ def run_benchmark_mode(
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     verbose: bool = True,
     forge_provider: str | None = None,
+    max_steps: int | None = None,
 ) -> dict[str, Any]:
     """Run evidence benchmark and export judge assets."""
     episodes = max(1, int(episodes))
@@ -282,6 +290,7 @@ def run_benchmark_mode(
         verbose=verbose,
         candidates_per_step=candidates_per_step,
         forge_provider=forge_provider,
+        max_steps=max_steps,
     )
 
     rows: list[dict[str, Any]] = []
@@ -320,6 +329,7 @@ def run_compare_mode(
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     verbose: bool = True,
     forge_provider: str | None = None,
+    max_steps: int | None = None,
 ) -> dict[str, Any]:
     """Run baseline heuristic vs model policy comparison with improvement metrics."""
     baseline = run_benchmark_mode(
@@ -327,6 +337,7 @@ def run_compare_mode(
         episodes=episodes,
         candidates_per_step=candidates_per_step,
         verbose=verbose,
+        max_steps=max_steps,
     )
     model = run_benchmark_mode(
         policy_name=model_policy_name,
@@ -334,6 +345,7 @@ def run_compare_mode(
         candidates_per_step=candidates_per_step,
         verbose=verbose,
         forge_provider=forge_provider,
+        max_steps=max_steps,
     )
 
     baseline_summary = baseline.get("summary", {})

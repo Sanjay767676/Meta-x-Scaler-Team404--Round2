@@ -76,6 +76,17 @@ def _ui_candidates_per_step() -> int:
     return max(1, min(8, int(os.getenv("FORGE_UI_CANDIDATES", "1"))))
 
 
+def _ui_max_steps_for_gradio() -> int | None:
+    """Gradio-only: cap steps per episode (`FORGE_UI_STEPS`). Use full, default, or 0 for global config.STEPS_PER_EPISODE."""
+    raw = os.getenv("FORGE_UI_STEPS", "2").strip().lower()
+    if raw in ("full", "default", "0"):
+        return None
+    try:
+        return max(1, min(10, int(raw)))
+    except ValueError:
+        return 2
+
+
 def run_benchmark_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for benchmark mode."""
     ep_count = min(int(episodes), _benchmark_episode_cap())
@@ -88,6 +99,7 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
         verbose=False,
         forge_provider=mode,
         candidates_per_step=_ui_candidates_per_step(),
+        max_steps=_ui_max_steps_for_gradio(),
     )
     
     summary = report.get("summary", {})
@@ -120,6 +132,7 @@ def run_compare_ui(episodes, forge_provider_label: str):
         verbose=False,
         forge_provider=mode,
         candidates_per_step=_ui_candidates_per_step(),
+        max_steps=_ui_max_steps_for_gradio(),
     )
     
     model_summary = report.get("model", {})
@@ -173,7 +186,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                     "**custom_hf** = local PyTorch + Hub weights on this machine (default on **GPU**). "
                     "**auto** = NIM → OpenRouter → optional local HF if **HF_TOKEN** is set → else offline. "
                     "**offline** = no external APIs (CPU-friendly fallback). "
-                    "Gradio benchmarks use **1 candidate/step** by default (`FORGE_UI_CANDIDATES`); CLI/training use more."
+                    "Gradio uses **`FORGE_UI_CANDIDATES`** (default 1) and **`FORGE_UI_STEPS`** (default 2 steps/episode; set `full` for config default). CLI/training use full settings."
                 ),
             )
         

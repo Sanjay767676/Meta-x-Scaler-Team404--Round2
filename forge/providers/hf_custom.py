@@ -98,6 +98,7 @@ class HFCustomProvider:
         gen_cfg = GenerationConfig(
             max_new_tokens=self.max_new_tokens,
             do_sample=False,
+            use_cache=True,
             pad_token_id=self._tokenizer.pad_token_id,
         )
         with torch.inference_mode():

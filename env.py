@@ -6,7 +6,7 @@ import uuid
 from typing import Any
 
 from agents import BreakerAgent
-from config import STEPS_PER_EPISODE
+import config
 from logger import log_step
 from memory import CoachMemory
 from rewards import breaker_reward, coder_reward
@@ -217,7 +217,7 @@ class FORGEEnv:
         self.breaker.update_tier(breaker_info["break_rate"], coder_info["pass_rate"], self.episode)
 
         # ── 7. Check done + return ────────────────────────────────────────
-        if self.step_count >= STEPS_PER_EPISODE:
+        if self.step_count >= config.STEPS_PER_EPISODE:
             self.done = True
 
         return {
