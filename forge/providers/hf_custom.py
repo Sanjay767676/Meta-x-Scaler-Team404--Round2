@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 from typing import Any
 
@@ -48,10 +49,13 @@ class HFCustomProvider:
 
             dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
             device_map = "auto" if torch.cuda.is_available() else None
-            model_kw: dict[str, Any] = {
-                "trust_remote_code": True,
-                "torch_dtype": dtype,
-            }
+            model_kw: dict[str, Any] = {"trust_remote_code": True}
+            # Newer transformers prefer `dtype`; older builds use `torch_dtype`.
+            _sig = inspect.signature(AutoModelForCausalLM.from_pretrained)
+            if "dtype" in _sig.parameters:
+                model_kw["dtype"] = dtype
+            else:
+                model_kw["torch_dtype"] = dtype
             if self.hf_token:
                 model_kw["token"] = self.hf_token
             if device_map:
