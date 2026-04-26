@@ -36,11 +36,22 @@ def get_memory_lessons() -> str:
         output += f"{idx+1}. Episode {lesson.get('episode')}: {lesson.get('coach_note')} (Weight: {lesson.get('reward_weight')})\n"
     return output
 
-def run_benchmark_ui(episodes):
+FORGE_PROVIDER_OPTIONS = ["auto", "custom_hf", "nim", "openrouter", "mock"]
+
+
+def run_benchmark_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for benchmark mode."""
     # Limit episodes for demo stability on CPU
-    ep_count = min(int(episodes), 5) 
-    report = run_benchmark_mode(policy_name="model", episodes=ep_count, verbose=False)
+    ep_count = min(int(episodes), 5)
+    mode = forge_provider_label if forge_provider_label in (
+        "auto", "custom_hf", "nim", "openrouter", "mock"
+    ) else "auto"
+    report = run_benchmark_mode(
+        policy_name="model",
+        episodes=ep_count,
+        verbose=False,
+        forge_provider=mode,
+    )
     
     summary = report.get("summary", {})
     generate_charts() # Update trends too
@@ -60,10 +71,18 @@ def run_benchmark_ui(episodes):
         lessons
     )
 
-def run_compare_ui(episodes):
+def run_compare_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for compare mode."""
-    ep_count = min(int(episodes), 3) # Very small for demo
-    report = run_compare_mode(model_policy_name="model", episodes=ep_count, verbose=False)
+    ep_count = min(int(episodes), 3)  # Very small for demo
+    mode = forge_provider_label if forge_provider_label in (
+        "auto", "custom_hf", "nim", "openrouter", "mock"
+    ) else "auto"
+    report = run_compare_mode(
+        model_policy_name="model",
+        episodes=ep_count,
+        verbose=False,
+        forge_provider=mode,
+    )
     
     model_summary = report.get("model", {})
     generate_charts()
@@ -108,6 +127,12 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Tab("2. Training & Evaluation"):
         with gr.Row():
             episodes_input = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Episodes (Limited for Demo)")
+            provider_input = gr.Dropdown(
+                choices=FORGE_PROVIDER_OPTIONS,
+                value="auto",
+                label="Inference provider",
+                info="Auto tries HF adapter, then NIM, then OpenRouter, then deterministic mock.",
+            )
         
         with gr.Row():
             btn_benchmark = gr.Button("Run Model Benchmark", variant="primary")
@@ -145,14 +170,14 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
 
     # Event handlers
     btn_benchmark.click(
-        run_benchmark_ui, 
-        inputs=[episodes_input], 
-        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output]
+        run_benchmark_ui,
+        inputs=[episodes_input, provider_input],
+        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output],
     )
     btn_compare.click(
-        run_compare_ui, 
-        inputs=[episodes_input], 
-        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output]
+        run_compare_ui,
+        inputs=[episodes_input, provider_input],
+        outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output],
     )
 
 if __name__ == "__main__":

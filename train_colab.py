@@ -17,7 +17,13 @@ def count_dpo_pairs(path: str = DPO_DATASET_FILE) -> int:
         return 0
 
 
-def topup_dpo_pairs(target_pairs: int, policy: str, candidates: int, quiet: bool) -> int:
+def topup_dpo_pairs(
+    target_pairs: int,
+    policy: str,
+    candidates: int,
+    quiet: bool,
+    forge_provider: str | None = None,
+) -> int:
     """Run additional benchmark batches until target DPO pair count is reached."""
     rounds = 0
     current = count_dpo_pairs()
@@ -28,6 +34,7 @@ def topup_dpo_pairs(target_pairs: int, policy: str, candidates: int, quiet: bool
             episodes=20,
             candidates_per_step=candidates,
             verbose=not quiet,
+            forge_provider=forge_provider,
         )
         new_count = count_dpo_pairs()
         if new_count <= current:
@@ -45,8 +52,16 @@ def main():
     parser.add_argument("--target-pairs", type=int, default=MIN_DPO_PAIRS_TARGET, help="Minimum DPO pairs to produce")
     parser.add_argument("--topup-dpo", action="store_true", help="Run extra batches until target pairs are reached")
     parser.add_argument("--quiet", action="store_true", help="Disable verbose progress logs")
-    
+    parser.add_argument(
+        "--forge-provider",
+        type=str,
+        default=None,
+        metavar="MODE",
+        help="Inference mode for policy=model: auto|custom_hf|nim|openrouter|mock (default: config CODE_PROVIDER_MODE)",
+    )
+
     args = parser.parse_args()
+    forge_provider = args.forge_provider
     
     ensure_runtime_dirs()
     print("\n" + "="*60)
@@ -61,7 +76,8 @@ def main():
             model_policy_name="model",
             episodes=args.episodes,
             candidates_per_step=args.candidates,
-            verbose=verbose
+            verbose=verbose,
+            forge_provider=forge_provider,
         )
     elif args.benchmark:
         print(f"  Starting benchmark mode for '{args.policy}' ({args.episodes} episodes)...")
@@ -69,7 +85,8 @@ def main():
             policy_name=args.policy,
             episodes=args.episodes,
             candidates_per_step=args.candidates,
-            verbose=verbose
+            verbose=verbose,
+            forge_provider=forge_provider,
         )
     else:
         # Default to comparison if no mode specified
@@ -78,7 +95,8 @@ def main():
             model_policy_name="model",
             episodes=args.episodes,
             candidates_per_step=args.candidates,
-            verbose=verbose
+            verbose=verbose,
+            forge_provider=forge_provider,
         )
 
     if args.topup_dpo:
@@ -87,6 +105,7 @@ def main():
             policy=args.policy,
             candidates=args.candidates,
             quiet=args.quiet,
+            forge_provider=forge_provider,
         )
         print(f"  DPO pairs available: {current}")
 

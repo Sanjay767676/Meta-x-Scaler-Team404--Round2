@@ -8,7 +8,7 @@ import uuid
 from typing import Any, Callable
 
 from agents import coder_version_label, get_coder_code
-from config import CHECKPOINT_FILE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, STEPS_PER_EPISODE, LLM_PROVIDER, ensure_runtime_dirs
+from config import CHECKPOINT_FILE, CODE_PROVIDER_MODE, DEFAULT_CANDIDATES_PER_STEP, MAX_EPISODES, STEPS_PER_EPISODE, ensure_runtime_dirs
 from env import FORGEEnv
 from logger import log_episode, update_summary, write_episode_report
 from metrics.charts import export_judge_assets
@@ -255,9 +255,10 @@ def train_with_policy_name(
     verbose: bool = True,
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     memory: CoachMemory | None = None,
+    forge_provider: str | None = None,
 ) -> dict[str, Any]:
     """Convenience helper for selecting a policy by name."""
-    policy = build_policy(policy_name, memory=memory)
+    policy = build_policy(policy_name, memory=memory, forge_provider=forge_provider)
     return train_defender(
         coder_policy=policy,
         num_episodes=num_episodes,
@@ -271,6 +272,7 @@ def run_benchmark_mode(
     episodes: int = 20,
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     verbose: bool = True,
+    forge_provider: str | None = None,
 ) -> dict[str, Any]:
     """Run evidence benchmark and export judge assets."""
     episodes = max(20, episodes)
@@ -279,6 +281,7 @@ def run_benchmark_mode(
         num_episodes=episodes,
         verbose=verbose,
         candidates_per_step=candidates_per_step,
+        forge_provider=forge_provider,
     )
 
     rows: list[dict[str, Any]] = []
@@ -316,6 +319,7 @@ def run_compare_mode(
     episodes: int = 20,
     candidates_per_step: int = DEFAULT_CANDIDATES_PER_STEP,
     verbose: bool = True,
+    forge_provider: str | None = None,
 ) -> dict[str, Any]:
     """Run baseline heuristic vs model policy comparison with improvement metrics."""
     baseline = run_benchmark_mode(
@@ -329,6 +333,7 @@ def run_compare_mode(
         episodes=episodes,
         candidates_per_step=candidates_per_step,
         verbose=verbose,
+        forge_provider=forge_provider,
     )
 
     baseline_summary = baseline.get("summary", {})
@@ -370,7 +375,7 @@ def _write_readme_results(report: dict[str, Any]) -> None:
     content = f"""# FORGE-v4 Benchmark Results
 
 ## 1. Executive Summary
-The FORGE-v4 benchmark evaluated the robustness of the **{report.get('model_policy')}** (Provider: {LLM_PROVIDER}) against an adversarial **Breaker** agent.
+The FORGE-v4 benchmark evaluated the robustness of the **{report.get('model_policy')}** (inference: `{CODE_PROVIDER_MODE}`) against an adversarial **Breaker** agent.
 
 | Metric | Baseline (Heuristic) | Model Policy | Improvement |
 | :--- | :--- | :--- | :--- |

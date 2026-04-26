@@ -12,7 +12,12 @@ from policies.mock_model import MockModelPolicy
 from memory import CoachMemory
 
 
-def build_policy(name: str, strategy: str = "improving_coder", memory: CoachMemory | None = None) -> CoderPolicy:
+def build_policy(
+    name: str,
+    strategy: str = "improving_coder",
+    memory: CoachMemory | None = None,
+    forge_provider: str | None = None,
+) -> CoderPolicy:
     """Build a policy by short name.
 
     Supported names: heuristic | api | local | mock | model.
@@ -25,14 +30,8 @@ def build_policy(name: str, strategy: str = "improving_coder", memory: CoachMemo
     if normalized == "mock":
         return MockModelPolicy(memory=memory)
     if normalized == "model":
-        from config import LLM_PROVIDER
+        from policies.router_model import RouterModelPolicy
 
-        if LLM_PROVIDER in ("openrouter", "hf_api", "huggingface_api"):
-            provider_name = "hf_api" if "hf" in LLM_PROVIDER else "openrouter"
-            return APIModelPolicy(provider_name=provider_name)
-        if LLM_PROVIDER in ("huggingface_local", "hf_local", "local"):
-            return LocalModelPolicy()
-        if LLM_PROVIDER == "nim":
-            return APIModelPolicy(provider_name="nim")
-        return MockModelPolicy(memory=memory)
+        # HF custom → NIM → OpenRouter → mock (see forge/providers/router.py)
+        return RouterModelPolicy(memory=memory, mode=forge_provider)
     return HeuristicPolicy(strategy=strategy)

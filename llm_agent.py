@@ -7,7 +7,6 @@ without API keys during hackathons.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 from typing import Any
 
 from config import (
@@ -16,19 +15,11 @@ from config import (
     LLM_PROVIDER,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
+    OPENROUTER_MODEL,
     NIM_MODEL,
     NVIDIA_API_KEY,
 )
-
-
-@dataclass
-class LLMResponse:
-    """Normalized response payload for any provider."""
-
-    provider: str
-    model: str
-    content: str
-    raw: dict[str, Any]
+from forge.llm_types import LLMResponse
 
 
 class BaseLLMProvider:
@@ -132,7 +123,7 @@ class OpenRouterProvider(BaseLLMProvider):
             import requests  # type: ignore
 
             payload = {
-                "model": LLM_MODEL,
+                "model": OPENROUTER_MODEL,
                 "messages": [
                     {"role": "system", "content": system_prompt or "You are a Python coding model."},
                     {"role": "user", "content": prompt},
@@ -160,7 +151,7 @@ class OpenRouterProvider(BaseLLMProvider):
                 raise ValueError("OpenRouter returned empty content")
             return LLMResponse(
                 provider=self.name,
-                model=LLM_MODEL,
+                model=OPENROUTER_MODEL,
                 content=content,
                 raw={"status": "ok", "base_url": self.base_url},
             )
@@ -309,8 +300,10 @@ def extract_python_code(text: str) -> str:
     return text.strip()
 
 
-def generate_code(prompt: str, system_prompt: str = "") -> str:
-    """Convenience API for future trainer/env integration."""
-    provider = get_provider()
-    response = provider.generate(prompt=prompt, system_prompt=system_prompt)
+def generate_code(prompt: str, provider: str = "auto", system_prompt: str = "") -> str:
+    """Unified entry: modular router (auto) or explicit backend (see forge/providers/router.py)."""
+    from forge.providers.router import get_inference_router
+
+    router = get_inference_router()
+    response = router.generate(prompt=prompt, system_prompt=system_prompt, mode=provider)
     return extract_python_code(response.content)

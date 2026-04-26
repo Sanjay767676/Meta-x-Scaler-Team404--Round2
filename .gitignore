@@ -55,6 +55,9 @@ outputs/reward_graphs/
 *.ipynb
 !FORGE_Training_Colab.ipynb
 
+# Secrets
+.env
+
 # IDE
 .vscode/
 .idea/

@@ -1,10 +1,18 @@
 """Central configuration for FORGE-v4.
 
 This module intentionally keeps plain constants so hackathon iteration remains
-fast and transparent.
+fast and transparent. Secrets load only from environment variables or a local
+`.env` file (never commit real keys).
 """
 
 import os
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
 
 # Sandbox settings
 SANDBOX_TIMEOUT_SECONDS = 5
@@ -76,15 +84,35 @@ STEPS_PER_EPISODE = 3
 DEFAULT_CANDIDATES_PER_STEP = 3
 GLOBAL_RANDOM_SEED = 42
 
-# LLM provider configuration (future-ready)
+# LLM provider configuration (legacy + local policies)
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock")  # mock | openrouter | hf_api | huggingface_local | nim
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen2.5-coder-0.5b-instruct")
 HF_LOCAL_MODEL_ID = os.getenv("HF_LOCAL_MODEL_ID", "qwen/qwen2.5-coder-0.5b-instruct")
-NIM_MODEL = os.getenv("NIM_MODEL", "meta/llama-3.1-405b-instruct")  # High-performance NIM choice
+
+# Router: Hugging Face custom (base + LoRA adapter from hub)
+BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-Coder-1.5B-Instruct")
+HF_ADAPTER_REPO = os.getenv("HF_MODEL_ID", os.getenv("HF_ADAPTER_REPO", "sanjay7676/forge-qwen-final"))
+
+# NVIDIA NIM (OpenAI-compatible)
+NIM_API_KEY = os.getenv("NIM_API_KEY", os.getenv("NVIDIA_API_KEY", ""))
+NVIDIA_API_KEY = NIM_API_KEY
+NIM_BASE_URL = os.getenv("NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
+NIM_MODEL = os.getenv("NIM_MODEL", "meta/llama-3.1-8b-instruct")
+
+# OpenRouter
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-HF_TOKEN = os.getenv("HF_TOKEN", "")
-NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen2.5-coder-7b-instruct")
+
+HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HUGGING_FACE_HUB_TOKEN", ""))
+
+# Policy "model" routing: auto | custom_hf | nim | openrouter | mock
+CODE_PROVIDER_MODE = os.getenv("CODE_PROVIDER_MODE", "auto")
+
+# Per-provider HTTP / wrapped inference timeouts (seconds)
+ROUTER_HF_TIMEOUT_SEC = float(os.getenv("ROUTER_HF_TIMEOUT_SEC", "360"))
+ROUTER_NIM_TIMEOUT_SEC = float(os.getenv("ROUTER_NIM_TIMEOUT_SEC", "90"))
+ROUTER_OPENROUTER_TIMEOUT_SEC = float(os.getenv("ROUTER_OPENROUTER_TIMEOUT_SEC", "90"))
 
 # Dataset / evidence settings
 DPO_DATASET_FILE = "data/dpo_dataset.jsonl"
