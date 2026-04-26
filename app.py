@@ -4,6 +4,7 @@ import gradio as gr
 import pandas as pd
 from typing import Any, Dict
 from fastapi import FastAPI
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from trainer import run_benchmark_mode, run_compare_mode
 from memory import CoachMemory
@@ -194,8 +195,18 @@ app = gr.mount_gradio_app(
     ssr_mode=False,
 )
 
+# HF Spaces (and other reverse proxies) terminate TLS and set X-Forwarded-Proto. Without this,
+# Gradio's slash redirects emit http://… which the browser blocks inside https iframes → blank UI.
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=7860,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )

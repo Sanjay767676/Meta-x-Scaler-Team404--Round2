@@ -68,7 +68,7 @@ curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
 
 `curl.exe ... --data-binary "@examples/space_step.json"` (from repo root) or any **absolute** path to your JSON file.
 
-**If the Hub “App” tab is blank:** open the **direct** Space URL in a new tab — `https://sanjay7676-team404-forge.hf.space/` (Gradio UI should load there). Allow third-party cookies for `huggingface.co` if the embedded App tab stays empty ([HF discussion](https://discuss.huggingface.co/t/cant-able-to-see-ui-when-the-model-is-running/56373)).
+**If the Hub “App” tab is blank:** the Space sits behind a TLS proxy. Gradio was issuing a **`307` redirect to `http://…`** (see `curl -I` on `/`), which **HTTPS pages block as mixed content** inside the Hub iframe → empty canvas. **`app.py` adds `ProxyHeadersMiddleware`** so redirects use **`https://`** after you rebuild the Space. Then open **`https://sanjay7676-team404-forge.hf.space/`** (or wait for the Hub App tab). If the Hub tab is still empty, allow third-party cookies ([HF discussion](https://discuss.huggingface.co/t/cant-able-to-see-ui-when-the-model-is-running/56373)).
 
 **Note:** The Space shares **one** in-memory environment across all visitors — concurrent `reset` / `step` calls can interleave. For isolated runs, use **Docker** or **local** `api_server.py` on port `8000`.
 
