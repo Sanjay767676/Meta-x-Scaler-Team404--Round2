@@ -1,7 +1,7 @@
 """Ordered inference router.
 
-* **auto:** nim → openrouter → custom_hf → mock (fast APIs and deterministic mock first;
-  local HF last because it is slow on CPU / may need large downloads).
+* **auto:** nim → openrouter → mock only. **custom_hf is not in `auto`** — local PyTorch
+  loads are slow on CPU Spaces; pick **custom_hf** explicitly when you want the adapter.
 * **Explicit modes** call one provider (with fallback to mock where implemented).
 """
 
@@ -94,11 +94,10 @@ class InferenceRouter:
         if mode == "openrouter":
             return self._try_openrouter(prompt, system_prompt, fallback=True)
 
-        # auto: try fast cloud APIs before local HF (which can block minutes on CPU Spaces).
+        # auto: cloud APIs only, then mock. (custom_hf excluded — it can block minutes on CPU.)
         for label, fn in (
             ("nim", lambda: self._try_nim(prompt, system_prompt, fallback=False)),
             ("openrouter", lambda: self._try_openrouter(prompt, system_prompt, fallback=False)),
-            ("custom_hf", lambda: self._try_hf(prompt, system_prompt, fallback=False)),
         ):
             try:
                 return fn()

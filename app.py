@@ -135,7 +135,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 choices=FORGE_PROVIDER_OPTIONS,
                 value="mock",
                 label="Inference provider",
-                info="Default **mock** is instant (no API keys). **auto** tries NIM → OpenRouter → local HF adapter → mock. **custom_hf** loads PyTorch/Transformers and can take minutes on CPU.",
+                info="**mock** = instant. **auto** = NIM → OpenRouter → mock (no local HF). **custom_hf** loads PyTorch/Transformers and can take minutes on CPU.",
             )
         
         with gr.Row():

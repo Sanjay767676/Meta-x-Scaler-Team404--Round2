@@ -32,6 +32,6 @@ def build_policy(
     if normalized == "model":
         from policies.router_model import RouterModelPolicy
 
-        # auto: NIM → OpenRouter → custom HF → mock (see forge/providers/router.py)
+        # auto: NIM → OpenRouter → mock — no custom_hf (see forge/providers/router.py)
         return RouterModelPolicy(memory=memory, mode=forge_provider)
     return HeuristicPolicy(strategy=strategy)

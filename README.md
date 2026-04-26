@@ -147,7 +147,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
 2. **Tiered Breaker** — difficulty ramps with performance.  
 3. **CoachMemory** — failures become lessons, not noise.  
 4. **Real post-training path** — preference data from the env feeds repeated short **DPO / GRPO** adapter workflows on a small coder model.  
-5. **Inference router** — **`auto`** order: **NIM → OpenRouter → HF custom (base + adapter) → deterministic mock** (cloud first, slow local HF last). Use **`mock`** alone for instant CPU demos.
+5. **Inference router** — **`auto`** order: **NIM → OpenRouter → deterministic mock** (no local HF in `auto`; pick **`custom_hf`** only when you want the adapter). Use **`mock`** alone for instant CPU demos.
 
 ---
 
@@ -264,7 +264,7 @@ Configured in **`config.py`** / **`.env`** (see **`.env.example`**). **Never com
 | 3 | **`openrouter`** | OpenRouter chat completions |
 | 4 | **`mock`** | Deterministic `solution(arr)` → `sorted(arr)` (offline guarantee) |
 
-**Modes:** `mock` (default, instant), `auto` (NIM → OpenRouter → custom HF → mock), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **mock**. CLI example: `python train_colab.py --compare --forge-provider auto`.
+**Modes:** `mock` (default, instant), `auto` (NIM → OpenRouter → mock, **skips local HF**), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **mock**. CLI example: `python train_colab.py --compare --forge-provider auto`.
 
 For training, our intended workflow is different from inference routing: we default to a **small local base model with 4-bit LoRA adapters** so we can complete many successful runs in limited compute.
 
