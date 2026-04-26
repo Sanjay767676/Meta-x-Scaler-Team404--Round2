@@ -10,104 +10,113 @@ app_file: app.py
 pinned: false
 ---
 
-# FORGE-v4: Adversarial Robust Code Generation
+# FORGE-v4
 
-> **Judge Summary:** A production‑grade adversarial benchmark that delivers fully public Hugging Face Space, OpenEnv‑compliant API, authentic DPO training evidence, and visual results—all passing validation.
+**OpenEnv-style RL environment for adversarial code generation** — a Defender writes Python; a Breaker escalates tiered stress tests; rewards and memory come from real sandbox runs, not vibes.
 
-[![Hackathon: Meta OpenEnv](https://img.shields.io/badge/Hackathon-Meta%20OpenEnv-blueviolet)](https://github.com/Meta-OpenEnv)
-[![Demo: Hugging Face](https://img.shields.io/badge/Demo-Hugging%20Face-orange)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
-[![Repo: GitHub](https://img.shields.io/badge/Code-GitHub-black)](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git)
-
-**FORGE-v4** (Framework for Objective Robustness & Generation Evaluation) is a high-fidelity adversarial benchmark environment designed to harden code-generation models against real-world edge cases, boundary values, and malicious logic traps.
-
-## 🎯 Problem Statement
-Large Language Models (LLMs) often excel at writing standard algorithms but fail silently when faced with adversarial inputs like negative values, extreme duplicates, or large-scale stress tests. In production, these "silent failures" lead to security vulnerabilities and system crashes.
-
-**FORGE-v4** solves this by implementing an **Adversarial Red-Teaming loop** where a model's robustness is continuously challenged by an evolving Breaker agent.
-
-## ⚔️ The Adversarial Loop
-FORGE-v4 operates as a two-agent zero-sum game:
-1.  **The Defender (Coder)**: Generates Python code to solve algorithmic tasks.
-2.  **The Adversary (Breaker)**: Discovers and escalates adversarial test cases across 4 Tiers of difficulty.
-3.  **CoachMemory**: A persistent feedback loop where the model "learns" from past failures to generate more robust solutions in subsequent episodes.
-
-## 🚀 Benchmark Results (Sample Local Run Snapshot)
-| Metric | Baseline (Heuristic) | Model Policy | Delta |
-| :--- | :--- | :--- | :--- |
-| **Avg Pass Rate** | 91.00% | 100.00% | **+9.00%** |
-| **Avg Reward** | 10.90 | 13.00 | **+2.10** |
-| **Max Tier Reached** | Tier 4 | Tier 4 | **Sustained** |
-
-### Visual Evidence
-<div align="center">
-  <img src="outputs/reward_curve.png" width="45%" />
-  <img src="outputs/loss_curve.png" width="45%" />
-  <img src="outputs/pass_rate.png" width="45%" />
-</div>
-
-## 🛠️ Technology Stack
-- **Core Engine**: Python 3.11+
-- **Sandbox**: Secure subprocess-based execution with resource limits.
-- **API Standard**: OpenEnv compliant (FastAPI).
-- **UI**: Gradio (Interactive Demo).
-- **Optimization**: Batch candidate evaluation and caching.
-
-## 📡 API Endpoints
-FORGE-v4 is fully programmable via its FastAPI server (`api_server.py`):
-- `POST /reset`: Initialize a new adversarial episode.
-- `POST /step`: Submit code candidates and receive rewards/diagnostics.
-- `GET /state`: Retrieve current environment metrics and memory summary.
-
-## 💻 Local Setup
-```bash
-# Clone the repo
-git clone https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
-cd FORGE
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the interactive demo
-python app.py
-
-# Run the training benchmark
-python train_colab.py --compare --episodes 20
-```
-
-## 🔗 Submission Links
-- Hugging Face Space: https://huggingface.co/spaces/sanjay7676/Team404_FORGE
-- GitHub Repository: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
-- Training Entrypoint: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/train_colab.py
-- DPO Script: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/train_unsloth.py
-- Writeup: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/MINI_BLOG.md
-
-## 🧠 Authentic RL Training
-FORGE-v4 generates real-world preference data for model alignment:
-
-1.  **Generate Dataset**: Run a benchmark with a model policy. The environment evaluates multiple candidates and saves "Chosen" vs "Rejected" pairs into `data/dpo_dataset.jsonl`.
-    ```bash
-    python train_colab.py --compare --episodes 20
-    ```
-2.  **Fine-tune with Unsloth**: Apply the captured adversarial feedback using the integrated DPO trainer.
-    ```bash
-    bash setup_colab.sh
-    bash run_dpo.sh
-    ```
-
-  3.  **Top up to target dataset size in Colab (recommended):**
-    ```bash
-    python train_colab.py --benchmark --policy model --episodes 20 --topup-dpo --target-pairs 480
-    ```
-
-  > Current local dataset count in this repo can be verified via `data/dpo_dataset.jsonl`.
-  > Mock fallback provider is used only when API/local model dependencies are unavailable.
-  > NVIDIA/OpenRouter/HF API keys must be provided via environment variables and are never hardcoded.
-
-## 🗺️ Future Roadmap
-- [ ] **Multi-Language Support**: Support for C++, Java, and Rust sandboxes.
-- [ ] **Complex Task Generation**: Beyond sorting, into graph algorithms and dynamic programming.
-- [x] **True LLM Finetuning**: Integrated with LoRA/Unsloth for RL-based weight optimization.
-- [ ] **Web Dashboard**: Advanced analytics for multi-model comparisons.
+[![Hugging Face Space](https://img.shields.io/badge/Live-Demo-yellow)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
+[![GitHub](https://img.shields.io/badge/GitHub-Repo-black)](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2)
+[![Training Notebook](https://img.shields.io/badge/Colab-Notebook-orange)](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb)
+[![Hackathon](https://img.shields.io/badge/Hackathon-Meta%20OpenEnv-0a66c2)](https://openenv.devpost.com)
 
 ---
-*Developed by Team 404 for the Meta OpenEnv Hackathon.*
+
+## Why this exists (the story in one breath)
+
+Benchmarks love the happy path. Production does not. FORGE-v4 is a small arena where **pretty answers lose to executed answers**: the Breaker hunts negatives, duplicates, bad shapes, and large inputs while the Defender is scored by verifiers and timeouts. **CoachMemory** keeps a structured trace of *how* things failed, so later episodes are not amnesiac rerolls. That loop is the difference between a static test file and something that behaves like **self-improvement under pressure**.
+
+---
+
+## Rubric fit (what judges are looking for)
+
+| Track | How FORGE-v4 answers it |
+| :-- | :-- |
+| **Self-improvement (primary)** | Persistent **CoachMemory** (`memory.py`), Breaker **curriculum tiers**, trajectory export to **`data/dpo_dataset.jsonl`**, optional **Unsloth + TRL** post-training (`train_unsloth.py`). |
+| **Multi-agent (secondary)** | Explicit **Defender vs Breaker** loop each step (`agents.py`, `rewards.py`), not a single monolithic policy. |
+| **OpenEnv / environment** | **`openenv.yaml`** manifest; **`FORGEEnv`** in `env.py` with `reset`, `step`, **`get_state`**; **FastAPI** mirror at **`POST /reset`**, **`POST /step`**, **`GET /state`**, **`GET /health`** (`api_server.py`). |
+
+**Novelty in one line:** we combine **adversarial tier escalation + executable verification + memory-backed feedback + a training export path** in one reproducible repo, instead of a leaderboard snapshot or a chat-only demo.
+
+---
+
+## Tech stack (concrete)
+
+| Layer | Choices |
+| :-- | :-- |
+| **Language / runtime** | Python **3.11** |
+| **UI / hosting** | **Gradio** (`app.py`) on **Hugging Face Spaces** |
+| **API** | **FastAPI** + **Uvicorn** (`api_server.py`, port **8000**) |
+| **Env spec** | **`openenv.yaml`** (version, agents, routes, artifact paths) |
+| **Execution** | **Sandbox** with timeouts and caps (`sandbox.py`, `config.py`, `services/`) |
+| **Training** | **Unsloth**, **TRL**, **DPO** / **GRPO** modes, **LoRA** on **Qwen2.5-Coder** (4-bit default in trainer) |
+| **Repro** | **`FORGE_Training_Colab.ipynb`**, **`train_colab.py`**, **`setup_colab.sh`** (Colab GPU stack) |
+| **Inference hooks** | **`policies/`** — heuristic, API, local HF, **NIM-ready** via env (`config.py`) |
+
+---
+
+## Evidence (numbers you can re-run)
+
+After `python train_colab.py --compare --episodes 20`, inspect **`outputs/final_report.json`** and the plots below. The table is a **sample** from one local compare (your run may differ; the pipeline is deterministic given seed and config).
+
+| Metric | Baseline (heuristic) | Model policy | Delta |
+| :-- | --: | --: | --: |
+| Avg pass rate | 91.00% | 100.00% | +9.00% |
+| Avg Defender reward | 10.90 | 13.00 | +2.10 |
+| Max Breaker tier reached | 4 | 4 | — |
+
+<div align="center">
+  <img src="outputs/reward_curve.png" alt="Reward curve" width="32%" />
+  <img src="outputs/pass_rate.png" alt="Pass rate" width="32%" />
+  <img src="outputs/loss_curve.png" alt="Training loss" width="32%" />
+</div>
+
+---
+
+## Reproduce (fast paths)
+
+**Colab (recommended):** [open the notebook](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) → enable **GPU** if you want real Unsloth imports → run cells top to bottom (clone → `pip` → compare → train → checks → plots).
+
+**Local:**
+
+```bash
+git clone https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
+cd Meta-x-Scaler-Team404--Round2
+python -m venv .venv && .venv\Scripts\activate   # Windows; use source .venv/bin/activate on Unix
+pip install -r requirements.txt
+python app.py                                    # Gradio UI
+python api_server.py                             # OpenEnv API :8000
+python train_colab.py --compare --episodes 20
+python train_unsloth.py --mode dpo             # or --mode grpo
+```
+
+**Training fidelity:** `train_unsloth.py` runs full Unsloth/TRL when those libs and a **GPU** are available; otherwise it can fall back to a **simulation path** that still writes adapter metadata and **`outputs/TRAINING_REPORT.md`** so the repo stays runnable on CPU-only machines. For hackathon evidence of real fine-tuning, prefer Colab GPU + `setup_colab.sh`.
+
+---
+
+## Roadmap (what we will do next)
+
+- **Multi-task robustness** beyond the current controlled benchmark framing in `openenv.yaml`
+- **Security-style verifier loops** and richer exploit-shaped failures
+- **Long-horizon coding agents** (edit sequences, not single-shot snippets)
+- **Stronger isolation** for public deployment (containers on top of the current sandbox)
+
+---
+
+## Team
+
+**Team404** · Meta OpenEnv Hackathon
+
+---
+
+## Judge checklist (links + artifacts)
+
+| | |
+| :-- | :-- |
+| **Live demo** | [Hugging Face Space](https://huggingface.co/spaces/sanjay7676/Team404_FORGE) |
+| **Source** | [GitHub](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2) |
+| **Colab** | [FORGE_Training_Colab.ipynb](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
+| **Story / blog** | [MINI_BLOG.md](MINI_BLOG.md) |
+| **Commands & security** | [guide.md](guide.md) |
+| **Key outputs** | `outputs/final_report.json`, `outputs/*.png`, `logs/summary.json`, `logs/episodes.csv`, `data/dpo_dataset.jsonl` |
+
+**Scope (honest):** Python-first benchmark; GPU recommended for authentic Unsloth training; sandbox is hackathon-grade—harden further for untrusted code in production.
