@@ -1,4 +1,4 @@
-"""FORGE-v4 inference routing (HF custom, NIM, OpenRouter, mock)."""
+"""FORGE-v4 inference routing (mock, auto chain, NIM, OpenRouter, HF custom)."""
 
 from forge.llm_types import LLMResponse
 

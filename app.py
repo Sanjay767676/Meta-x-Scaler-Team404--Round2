@@ -39,7 +39,8 @@ def get_memory_lessons() -> str:
         output += f"{idx+1}. Episode {lesson.get('episode')}: {lesson.get('coach_note')} (Weight: {lesson.get('reward_weight')})\n"
     return output
 
-FORGE_PROVIDER_OPTIONS = ["auto", "custom_hf", "nim", "openrouter", "mock"]
+# mock first in the list so the Space demo defaults to instant deterministic runs.
+FORGE_PROVIDER_OPTIONS = ["mock", "auto", "nim", "openrouter", "custom_hf"]
 
 
 def run_benchmark_ui(episodes, forge_provider_label: str):
@@ -48,7 +49,7 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
     ep_count = min(int(episodes), 5)
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "mock"
-    ) else "auto"
+    ) else "mock"
     report = run_benchmark_mode(
         policy_name="model",
         episodes=ep_count,
@@ -79,7 +80,7 @@ def run_compare_ui(episodes, forge_provider_label: str):
     ep_count = min(int(episodes), 3)  # Very small for demo
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "mock"
-    ) else "auto"
+    ) else "mock"
     report = run_compare_mode(
         model_policy_name="model",
         episodes=ep_count,
@@ -132,9 +133,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             episodes_input = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Episodes (Limited for Demo)")
             provider_input = gr.Dropdown(
                 choices=FORGE_PROVIDER_OPTIONS,
-                value="auto",
+                value="mock",
                 label="Inference provider",
-                info="Auto tries HF adapter, then NIM, then OpenRouter, then deterministic mock.",
+                info="Default **mock** is instant (no API keys). **auto** tries NIM → OpenRouter → local HF adapter → mock. **custom_hf** loads PyTorch/Transformers and can take minutes on CPU.",
             )
         
         with gr.Row():

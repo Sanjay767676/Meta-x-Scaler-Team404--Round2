@@ -1,4 +1,9 @@
-"""Ordered inference router: custom_hf → nim → openrouter → mock."""
+"""Ordered inference router.
+
+* **auto:** nim → openrouter → custom_hf → mock (fast APIs and deterministic mock first;
+  local HF last because it is slow on CPU / may need large downloads).
+* **Explicit modes** call one provider (with fallback to mock where implemented).
+"""
 
 from __future__ import annotations
 
@@ -89,11 +94,11 @@ class InferenceRouter:
         if mode == "openrouter":
             return self._try_openrouter(prompt, system_prompt, fallback=True)
 
-        # auto
+        # auto: try fast cloud APIs before local HF (which can block minutes on CPU Spaces).
         for label, fn in (
-            ("custom_hf", lambda: self._try_hf(prompt, system_prompt, fallback=False)),
             ("nim", lambda: self._try_nim(prompt, system_prompt, fallback=False)),
             ("openrouter", lambda: self._try_openrouter(prompt, system_prompt, fallback=False)),
+            ("custom_hf", lambda: self._try_hf(prompt, system_prompt, fallback=False)),
         ):
             try:
                 return fn()

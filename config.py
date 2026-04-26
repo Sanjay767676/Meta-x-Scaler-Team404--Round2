@@ -108,11 +108,12 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen2.5-coder-7b-instruct
 
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HUGGING_FACE_HUB_TOKEN", ""))
 
-# Policy "model" routing: auto | custom_hf | nim | openrouter | mock
-CODE_PROVIDER_MODE = os.getenv("CODE_PROVIDER_MODE", "auto")
+# Policy "model" routing: mock | auto | custom_hf | nim | openrouter
+CODE_PROVIDER_MODE = os.getenv("CODE_PROVIDER_MODE", "mock")
 
 # Per-provider HTTP / wrapped inference timeouts (seconds)
-ROUTER_HF_TIMEOUT_SEC = float(os.getenv("ROUTER_HF_TIMEOUT_SEC", "360"))
+# Local HF load+infer can exceed 60s on cold CPU; default cap keeps Gradio responsive (raise via env on GPU).
+ROUTER_HF_TIMEOUT_SEC = float(os.getenv("ROUTER_HF_TIMEOUT_SEC", "90"))
 ROUTER_NIM_TIMEOUT_SEC = float(os.getenv("ROUTER_NIM_TIMEOUT_SEC", "90"))
 ROUTER_OPENROUTER_TIMEOUT_SEC = float(os.getenv("ROUTER_OPENROUTER_TIMEOUT_SEC", "90"))
 

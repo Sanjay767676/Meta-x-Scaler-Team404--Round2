@@ -1,4 +1,4 @@
-"""Defender policy using the FORGE inference router (HF → NIM → OpenRouter → mock)."""
+"""Defender policy using the FORGE inference router (auto: NIM → OpenRouter → custom HF → mock)."""
 
 from __future__ import annotations
 
