@@ -1,0 +1,44 @@
+services:
+  forge-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: forge:latest
+    command: python api_server.py
+    environment:
+      CODE_PROVIDER_MODE: mock
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  forge-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: forge:latest
+    command: python app.py
+    environment:
+      CODE_PROVIDER_MODE: mock
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "7860:7860"
+    depends_on:
+      forge-api:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./outputs:/app/outputs
+

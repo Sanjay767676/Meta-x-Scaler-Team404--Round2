@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # train_colab.py
 # One-click training entrypoint for Google Colab and CLI.
+# Optimized for repeated benchmark/data-generation cycles before each short
+# small-model adapter run.
 
 import sys
 import argparse
@@ -100,6 +102,7 @@ def main():
         )
 
     if args.topup_dpo:
+        print(f"  Topping up preference data toward {max(1, args.target_pairs)} pairs for the next short adapter run...")
         current = topup_dpo_pairs(
             target_pairs=max(1, args.target_pairs),
             policy=args.policy,

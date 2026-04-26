@@ -62,7 +62,7 @@ pinned: false
 | **Environment innovation** | **40%** | Adversarial **tiered Breaker** vs **Defender**, **executable** verification (not self-graded text), **CoachMemory** for structured failure lessons, and env-exported **preference data** — aimed at robust code under distribution shift, not another grid-world clone. |
 | **Storytelling & presentation** | **30%** | This README is structured for a **3–5 minute** read: problem → mechanics → rewards → training proof → demo. **Gradio Space** for non-technical flow; **mini-blog** for narrative. |
 | **Showing improvement in rewards** | **20%** | **Baseline vs model** via `train_colab.py --compare`; committed **`outputs/*.png`**, **`outputs/final_report.json`**, and episode logs. Plots use **labeled axes** (episode vs reward / pass rate / loss-like metric). |
-| **Reward & training pipeline** | **10%** | **Dense signals**: pass rate, fail/error/timeout components, tier robustness, multi-candidate ranking (`rewards.py`). **TRL + Unsloth** path (`train_unsloth.py`) consumes **`data/dpo_dataset.jsonl`** produced from env rollouts. |
+| **Reward & training pipeline** | **10%** | **Dense signals**: pass rate, fail/error/timeout components, tier robustness, multi-candidate ranking (`rewards.py`). **Small-model-first QLoRA** path (`train_unsloth.py`) consumes **`data/dpo_dataset.jsonl`** produced from env rollouts, so we can iterate on many short runs instead of chasing one large-model run. |
 
 ---
 
@@ -85,7 +85,7 @@ FORGE-v4 is an **OpenEnv-style** environment where a **Defender** writes Python 
 | **Type** | Multi-agent RL-style loop for code generation under pressure |
 | **Agents** | Defender (coder) vs Breaker (tiered adversary) |
 | **Contract** | `reset()` / `step()` / `get_state()` + **`openenv.yaml`** + **FastAPI** mirror + **`FORGEOpenEnvironment`** ([`env_openenv.py`](env_openenv.py)) for `openenv.core.Environment` |
-| **Training story** | Rollouts → `data/dpo_dataset.jsonl` → **SFT / DPO / GRPO** via Unsloth + TRL (`train_unsloth.py`) |
+| **Training story** | Rollouts → `data/dpo_dataset.jsonl` → repeated short **QLoRA / DPO / GRPO** adapter runs via Unsloth + TRL (`train_unsloth.py`) |
 | **Submitted weights** | LoRA adapter [`sanjay7676/forge-qwen-final`](https://huggingface.co/sanjay7676/forge-qwen-final) on base **`Qwen/Qwen2.5-Coder-1.5B-Instruct`** |
 
 ---
@@ -109,7 +109,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
 1. **Executable verification** — only sandbox-passing code earns credit.  
 2. **Tiered Breaker** — difficulty ramps with performance.  
 3. **CoachMemory** — failures become lessons, not noise.  
-4. **Real post-training path** — preference data from the env feeds **DPO / GRPO** workflows.  
+4. **Real post-training path** — preference data from the env feeds repeated short **DPO / GRPO** adapter workflows on a small coder model.  
 5. **Inference router** — production-minded order: **HF custom (base + adapter) → NVIDIA NIM → OpenRouter → deterministic mock** so judges always see a working run.
 
 ---
@@ -175,7 +175,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
 
 ## 9. Reward system
 
-Signals combine **pass rate** on hidden + adversarial tests, **syntax/runtime** outcomes, **timeout** penalties, Breaker **tier progression**, and anti-cheat style **multi-candidate ranking** (see `rewards.py`, `config.py`).
+Signals combine **pass rate** on hidden + adversarial tests, **syntax/runtime** outcomes, **timeout** penalties, Breaker **tier progression**, and anti-cheat style **multi-candidate ranking** (see `rewards.py`, `config.py`). The goal is to produce feedback strong enough that a **small QLoRA-trained model** can improve through many short cycles.
 
 ---
 
@@ -186,7 +186,8 @@ Signals combine **pass rate** on hidden + adversarial tests, **syntax/runtime** 
 | **Training Colab** | [Google Colab notebook](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing) |
 | **HF adapter (submission)** | [`sanjay7676/forge-qwen-final`](https://huggingface.co/sanjay7676/forge-qwen-final) |
 | **Base model** | `Qwen/Qwen2.5-Coder-1.5B-Instruct` |
-| **Pipeline** | `train_colab.py` → benchmarks / DPO pairs · `train_unsloth.py` → **SFT / DPO / GRPO** modes · `FORGE_Training_Colab.ipynb` |
+| **Training strategy** | **Small-model-first**: `Qwen2.5-Coder-1.5B-Instruct` + **4-bit QLoRA adapters** + repeated short runs |
+| **Pipeline** | `train_colab.py` → benchmarks / DPO pairs / top-ups · `train_unsloth.py` → short **DPO / GRPO** adapter runs · `FORGE_Training_Colab.ipynb` |
 | **Artifacts** | `outputs/final_report.json`, `data/dpo_dataset.jsonl`, `logs/*` |
 
 ---
@@ -228,6 +229,8 @@ Configured in **`config.py`** / **`.env`** (see **`.env.example`**). **Never com
 
 **Modes:** `auto` (full chain), or force `custom_hf` / `nim` / `openrouter` / `mock`. Gradio **Inference provider** dropdown maps to this. CLI: `python train_colab.py --compare --forge-provider auto`.
 
+For training, our intended workflow is different from inference routing: we default to a **small local base model with 4-bit LoRA adapters** so we can complete many successful runs in limited compute.
+
 Implementation: `forge/providers/*.py`, orchestration in `forge/providers/router.py`. Unified API: `llm_agent.generate_code(prompt, provider="auto", system_prompt="")`.
 
 ---
@@ -235,6 +238,8 @@ Implementation: `forge/providers/*.py`, orchestration in `forge/providers/router
 ## 14. Live demo
 
 **Hugging Face Space:** [https://huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
+
+Deployment note: as of the latest verification, the Space URL is serving the Gradio UI, but the root-level JSON API endpoints are not directly exposed there in the same way as the local FastAPI server. In local/container runs, use the dedicated API server on port `8000` for `POST /reset`, `POST /step`, `GET /state`, and `GET /health`.
 
 ---
 
@@ -248,7 +253,7 @@ Implementation: `forge/providers/*.py`, orchestration in `forge/providers/router
 
 - **Theme fit:** self-improvement (memory + curriculum + training export) and multi-agent (Defender vs Breaker) are first-class, not bolted on.  
 - **OpenEnv:** manifest + REST parity + clear state machine.  
-- **Credibility:** real adapter on HF, Colab training link, reproducible benchmark scripts.  
+- **Credibility:** real adapter on HF, Colab training link, reproducible benchmark scripts, and a **small-model-first** training strategy that is realistic for hackathon hardware.  
 - **Reliability:** router **always** lands on mock if cloud paths fail—**zero demo bricking** from a missing key.
 
 ---
@@ -275,8 +280,49 @@ pip install -r requirements.txt
 cp .env.example .env   # then edit — do not commit .env
 python app.py          # Gradio :7860
 python api_server.py   # OpenEnv API :8000
-python train_colab.py --compare --episodes 20
+python train_colab.py --compare --episodes 20 --topup-dpo
+python train_unsloth.py --mode dpo
 ```
+
+## Docker / Compose
+
+FORGE can also be run via Docker. A pre-built image is automatically published to the GitHub Container Registry. You can pull and run it directly without building:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/sanjay767676/meta-x-scaler-team404--round2:latest
+
+# Run the Gradio UI
+docker run -p 7860:7860 ghcr.io/sanjay767676/meta-x-scaler-team404--round2:latest
+```
+
+Alternatively, you can use Docker Compose to run both the API and UI services locally:
+
+- **`forge-api`** → FastAPI OpenEnv server on `http://localhost:8000`
+- **`forge-ui`** → Gradio app on `http://localhost:7860`
+
+Files:
+
+- [`Dockerfile`](Dockerfile)
+- [`docker-compose.yml`](docker-compose.yml)
+- [`.dockerignore`](.dockerignore)
+
+Run from source:
+
+```bash
+docker compose build
+docker compose up
+```
+
+Local API checks:
+
+```bash
+curl http://localhost:8000/health
+curl http://localhost:8000/state
+curl -X POST http://localhost:8000/reset
+```
+
+The Compose setup defaults to `CODE_PROVIDER_MODE=mock` so the stack can start without external API keys, while still preserving the full local API contract.
 
 ## Security note
 

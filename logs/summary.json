@@ -1,17 +1,17 @@
 {
-  "avg_break_rate": 0.0,
-  "avg_breaker_reward": -10.185,
-  "avg_coder_reward": 13.0,
-  "avg_pass_rate": 1.0,
+  "avg_break_rate": 0.065,
+  "avg_breaker_reward": -4.9267,
+  "avg_coder_reward": 11.0875,
+  "avg_pass_rate": 0.92,
   "best_coder_reward": 13.0,
   "coach_memory_summary": {
-    "avg_breaker_reward": -4.0337,
-    "avg_coder_reward": 11.9155,
+    "avg_breaker_reward": -4.391,
+    "avg_coder_reward": 11.8298,
     "episodes_seen": 20,
     "recent_coach_notes": [
-      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier",
-      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier",
-      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier"
+      "Episode 20: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier"
     ],
     "top_lessons": [
       {
@@ -27,15 +27,15 @@
       {
         "coach_note": "Episode 6: Coder (heuristic) failed on negatives+duplicates \u2192 ensure sort key uses true value, not abs()",
         "episode": 6,
-        "reward_weight": 47.1
+        "reward_weight": 50.55
       }
     ],
     "total_lessons": 1000,
-    "weighted_signal": 309990.145
+    "weighted_signal": 322686.4225
   },
-  "coder_version": "api",
+  "coder_version": "heuristic",
   "final_breaker_tier": 4,
-  "generated_at": "2026-04-26T01:36:14.427752",
+  "generated_at": "2026-04-26T07:18:43.619074",
   "total_episodes": 20,
-  "worst_coder_reward": 13.0
+  "worst_coder_reward": -1.0
 }

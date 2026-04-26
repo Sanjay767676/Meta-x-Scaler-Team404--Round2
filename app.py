@@ -3,11 +3,14 @@ import json
 import gradio as gr
 import pandas as pd
 from typing import Any, Dict
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from trainer import run_benchmark_mode, run_compare_mode
 from memory import CoachMemory
 from metrics.charts import generate_charts
 from config import LOG_SUMMARY_FILE, REWARD_GRAPHS_DIR, OUTPUTS_DIR
+from api_server import app as api_app
 
 # Handle missing directories
 os.makedirs(REWARD_GRAPHS_DIR, exist_ok=True)
@@ -180,5 +183,18 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output],
     )
 
+space_app = gr.mount_gradio_app(api_app, demo, path="/ui")
+
+
+@space_app.get("/")
+async def root_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/ui", status_code=302)
+
+
+app = space_app
+
+
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=7860)

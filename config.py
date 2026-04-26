@@ -90,6 +90,8 @@ LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen2.5-coder-0.5b-instruct")
 HF_LOCAL_MODEL_ID = os.getenv("HF_LOCAL_MODEL_ID", "qwen/qwen2.5-coder-0.5b-instruct")
 
 # Router: Hugging Face custom (base + LoRA adapter from hub)
+# Small-model-first default so repeated adapter runs are feasible on hackathon
+# hardware and in Colab.
 BASE_MODEL_ID = os.getenv("BASE_MODEL_ID", "Qwen/Qwen2.5-Coder-1.5B-Instruct")
 HF_ADAPTER_REPO = os.getenv("HF_MODEL_ID", os.getenv("HF_ADAPTER_REPO", "sanjay7676/forge-qwen-final"))
 
