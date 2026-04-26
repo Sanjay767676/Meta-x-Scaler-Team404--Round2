@@ -62,6 +62,7 @@ suggested_hardware: t4-small
 | **`FORGE_UI_CANDIDATES`** | Gradio benchmark/compare only — candidates per step (**default `1`** for faster `custom_hf`; raise for richer ranking) |
 | **`FORGE_UI_STEPS`** | Gradio only — steps per episode (**default `2`**; set **`full`**, **`default`**, or **`0`** to use global `STEPS_PER_EPISODE` = 3) |
 | **`FORGE_HF_MAX_NEW_TOKENS`** | `custom_hf` completion cap (**default `192`**) — lower is faster for short coding tasks |
+| **`FORGE_ALLOW_CUSTOM_HF_CPU`** | Set **`1`** only for debugging — otherwise **`custom_hf` without CUDA** uses the **offline** baseline (no multi‑GB CPU load) |
 
 ### OpenEnv HTTP API on the Hugging Face Space
 

@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import Callable
@@ -28,6 +29,18 @@ def get_inference_router() -> "InferenceRouter":
     if _ROUTER_SINGLETON is None:
         _ROUTER_SINGLETON = InferenceRouter()
     return _ROUTER_SINGLETON
+
+
+def _cuda_ok_for_custom_hf() -> bool:
+    """Local HF is only practical on GPU unless explicitly overridden (debug)."""
+    if os.getenv("FORGE_ALLOW_CUSTOM_HF_CPU", "").strip().lower() in ("1", "true", "yes"):
+        return True
+    try:
+        import torch  # noqa: PLC0415
+
+        return bool(torch.cuda.is_available())
+    except ImportError:
+        return False
 
 
 def _with_timeout(fn: Callable[[], LLMResponse], seconds: float) -> LLMResponse:
@@ -91,6 +104,9 @@ class InferenceRouter:
             return self._mock.generate(prompt, system_prompt)
 
         if mode == "custom_hf":
+            if not _cuda_ok_for_custom_hf():
+                logger.info("[router] custom_hf: no CUDA — offline baseline (set FORGE_ALLOW_CUSTOM_HF_CPU=1 to force CPU load)")
+                return self._mock.generate(prompt, system_prompt)
             return self._try_hf(prompt, system_prompt, fallback=True)
         if mode == "nim":
             return self._try_nim(prompt, system_prompt, fallback=True)
@@ -116,6 +132,11 @@ class InferenceRouter:
         return self._mock.generate(prompt, system_prompt)
 
     def _try_hf(self, prompt: str, system_prompt: str, fallback: bool) -> LLMResponse:
+        if not _cuda_ok_for_custom_hf():
+            if fallback:
+                logger.info("[router] custom_hf skipped in chain: no CUDA")
+                return self._mock.generate(prompt, system_prompt)
+            raise RuntimeError("custom_hf requires CUDA (or FORGE_ALLOW_CUSTOM_HF_CPU=1)")
         try:
             sec = self._timeouts["custom_hf"]
 

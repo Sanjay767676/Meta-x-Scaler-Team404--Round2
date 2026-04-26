@@ -93,6 +93,12 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
     ) else "offline"
+    if mode == "custom_hf" and not _cuda_ready():
+        gr.Info(
+            "No GPU: using the offline deterministic baseline for inference "
+            "(environment and rewards are still real; no local Hub weight load)."
+        )
+        mode = "offline"
     report = run_benchmark_mode(
         policy_name="model",
         episodes=ep_count,
@@ -126,6 +132,12 @@ def run_compare_ui(episodes, forge_provider_label: str):
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
     ) else "offline"
+    if mode == "custom_hf" and not _cuda_ready():
+        gr.Info(
+            "No GPU: using the offline deterministic baseline for inference "
+            "(environment and rewards are still real; no local Hub weight load)."
+        )
+        mode = "offline"
     report = run_compare_mode(
         model_policy_name="model",
         episodes=ep_count,
@@ -183,9 +195,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
                 value=default_forge_ui_provider(),
                 label="Inference provider",
                 info=(
-                    "**custom_hf** = local PyTorch + Hub weights on this machine (default on **GPU**). "
+                    "**custom_hf** = local PyTorch + Hub weights on **GPU** only; on CPU it automatically uses **offline** baseline. "
                     "**auto** = NIM → OpenRouter → optional local HF if **HF_TOKEN** is set → else offline. "
-                    "**offline** = no external APIs (CPU-friendly fallback). "
+                    "**offline** = deterministic baseline (no Hub load; fast on CPU). "
                     "Gradio uses **`FORGE_UI_CANDIDATES`** (default 1) and **`FORGE_UI_STEPS`** (default 2 steps/episode; set `full` for config default). CLI/training use full settings."
                 ),
             )
