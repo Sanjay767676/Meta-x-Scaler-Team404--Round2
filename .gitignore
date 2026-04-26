@@ -22,8 +22,8 @@ logs/*.log
 logs/*.jsonl
 logs/*.json
 logs/*.csv
-models/*
-!models/.gitkeep
+# models/*
+# !models/.gitkeep
 outputs/*
 !outputs/.gitkeep
 !outputs/*.png
