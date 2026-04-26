@@ -4,7 +4,8 @@ emoji: 🛡️
 colorFrom: blue
 colorTo: indigo
 sdk: gradio
-sdk_version: 4.0.0
+# Gradio 5.18+ allows websockets>=15 (required by openenv-core). Gradio 4.x pins websockets<12 and breaks the Space build.
+sdk_version: 5.25.0
 python_version: 3.11
 app_file: app.py
 pinned: false
@@ -279,4 +280,4 @@ python train_colab.py --compare --episodes 20
 
 ## Security note
 
-API keys belong in **Hugging Face Space secrets** or a **local `.env`** (gitignored). **Do not commit `.env`** to GitHub even on “free tier” keys — bots scrape public repos. This repo ships **`.env.example`** only.
+API keys belong in **[Space Settings → Repository secrets](https://huggingface.co/docs/hub/spaces-overview#managing-secrets)** (for the demo) or a **local `.env`** (gitignored). **Do not commit `.env`** to GitHub — crawlers harvest public repos. This repo ships **`.env.example`** only.
