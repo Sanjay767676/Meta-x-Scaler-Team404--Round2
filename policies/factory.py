@@ -32,5 +32,7 @@ def build_policy(name: str, strategy: str = "improving_coder", memory: CoachMemo
             return APIModelPolicy(provider_name=provider_name)
         if LLM_PROVIDER in ("huggingface_local", "hf_local", "local"):
             return LocalModelPolicy()
+        if LLM_PROVIDER == "nim":
+            return APIModelPolicy(provider_name="nim")
         return MockModelPolicy(memory=memory)
     return HeuristicPolicy(strategy=strategy)

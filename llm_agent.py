@@ -16,6 +16,8 @@ from config import (
     LLM_PROVIDER,
     OPENROUTER_API_KEY,
     OPENROUTER_BASE_URL,
+    NIM_MODEL,
+    NVIDIA_API_KEY,
 )
 
 
@@ -218,6 +220,70 @@ class HuggingFaceAPIProvider(BaseLLMProvider):
             return fallback
 
 
+class NvidiaNIMProvider(BaseLLMProvider):
+    """NVIDIA NIM provider with OpenAI-compatible API."""
+
+    name = "nim"
+
+    def __init__(self, api_key: str = NVIDIA_API_KEY, model_id: str = NIM_MODEL):
+        self.api_key = api_key or os.getenv("NVIDIA_API_KEY", "")
+        self.model_id = model_id
+        self.base_url = "https://integrate.api.nvidia.com/v1"
+
+    def generate(self, prompt: str, system_prompt: str = "") -> LLMResponse:
+        if not self.api_key:
+            return MockFallbackProvider().generate(prompt=prompt, system_prompt=system_prompt)
+
+        # Default system prompt for trained behavior if none provided
+        sys_prompt = system_prompt or (
+            "You are a defender model trained on FORGE adversarial sorting failures. "
+            "Produce robust Python solutions that handle edge cases (negatives, duplicates, large inputs) efficiently."
+        )
+
+        try:
+            import requests  # type: ignore
+
+            payload = {
+                "model": self.model_id,
+                "messages": [
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0.2,
+                "max_tokens": 1024,
+            }
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=45,
+            )
+            response.raise_for_status()
+            data = response.json()
+            content = (
+                data.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+                .strip()
+            )
+            if not content:
+                raise ValueError("NVIDIA NIM returned empty content")
+            
+            return LLMResponse(
+                provider=self.name,
+                model=self.model_id,
+                content=content,
+                raw={"status": "ok", "model": self.model_id, "provider": "nvidia_nim"},
+            )
+        except Exception as exc:  # noqa: BLE001
+            fallback = MockFallbackProvider().generate(prompt=prompt, system_prompt=sys_prompt)
+            fallback.raw["nim_error"] = f"{type(exc).__name__}: {exc}"
+            return fallback
+
+
 def get_provider(provider_name: str = LLM_PROVIDER) -> BaseLLMProvider:
     """Factory for active provider."""
     name = (provider_name or "").strip().lower()
@@ -227,6 +293,8 @@ def get_provider(provider_name: str = LLM_PROVIDER) -> BaseLLMProvider:
         return HuggingFaceAPIProvider()
     if name in ("huggingface_local", "hf_local", "local"):
         return HuggingFaceLocalProvider()
+    if name == "nim":
+        return NvidiaNIMProvider()
     return MockFallbackProvider()
 
 

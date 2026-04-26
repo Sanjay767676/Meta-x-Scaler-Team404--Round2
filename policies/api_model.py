@@ -13,19 +13,19 @@ class APIModelPolicy(CoderPolicy):
 
     name = "api"
 
-    def __init__(self, provider_name: str = "openrouter") -> None:
+    def __init__(self, provider_name: str = "openrouter", system_prompt: str | None = None) -> None:
         self.provider_name = provider_name
         self.provider = get_provider(provider_name)
+        self.system_prompt = system_prompt or (
+            "You are a FORGE defender model trained on adversarial sorting failures. "
+            "Return Python code only and define solution(arr) that handles duplicates, negatives, and edge cases."
+        )
 
     def generate_candidates(self, state: dict[str, Any], num_candidates: int) -> list[CodeCandidate]:
         prompt = state.get("problem_description", "Write solution(arr) that sorts integers ascending.")
-        system_prompt = (
-            "You are FORGE defender model. Return Python code only and define solution(arr)."
-        )
-
         candidates: list[CodeCandidate] = []
         for idx in range(max(1, num_candidates)):
-            response = self.provider.generate(prompt=prompt, system_prompt=system_prompt)
+            response = self.provider.generate(prompt=prompt, system_prompt=self.system_prompt)
             code = extract_python_code(response.content)
             if not code:
                 continue
