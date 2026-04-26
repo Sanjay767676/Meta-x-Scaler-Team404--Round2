@@ -18,7 +18,7 @@ pinned: false
 [![Colab (Drive)](https://img.shields.io/badge/Training-Colab-orange)](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing)
 [![Colab (GitHub)](https://img.shields.io/badge/Colab-GitHub_sync-green)](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb)
 [![Adapter](https://img.shields.io/badge/HF-Adapter-blue)](https://huggingface.co/sanjay7676/forge-qwen-final)
-[![Hackathon](https://img.shields.io/badge/Meta-OpenEnv-0a66c2)](https://openenv.devpost.com)
+[![Hackathon Guide](https://img.shields.io/badge/Meta-OpenEnv%20Guide-0a66c2)](https://docs.google.com/document/d/1Odznuzwtb1ecDOm2t6ToZd4MuMXXfO6vWUGcxbC6mFs/edit?tab=t.0#bookmark=kix.2dz0x0nie3me)
 
 ### Judge quick links (all materials)
 
@@ -33,7 +33,7 @@ pinned: false
 | **Training Colab (synced from GitHub)** | [FORGE_Training_Colab.ipynb on Colab](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
 | **Trained adapter** | [sanjay7676/forge-qwen-final](https://huggingface.co/sanjay7676/forge-qwen-final) |
 | **Command / security cheat sheet** | [guide.md](guide.md) |
-| **Video / slides** | *Add your public YouTube or slide-deck URL here when ready — do not upload large videos to the Space.* |
+| **Video / slides** | Optional. Current submission uses the mini-blog requirement via [MINI_BLOG.md](MINI_BLOG.md). |
 
 ### NOTE 1 — Non‑negotiable submission requirements (checklist)
 
