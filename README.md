@@ -20,6 +20,7 @@ suggested_hardware: cpu-basic
 [![Colab (Drive)](https://img.shields.io/badge/Training-Colab-orange)](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing)
 [![Colab (GitHub)](https://img.shields.io/badge/Colab-GitHub_sync-green)](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb)
 [![Adapter](https://img.shields.io/badge/HF-Adapter-blue)](https://huggingface.co/sanjay7676/forge-qwen-final)
+[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-sanjay767676%2Fforge-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/sanjay767676/forge)
 [![Hackathon Guide](https://img.shields.io/badge/Meta-OpenEnv%20Guide-0a66c2)](https://docs.google.com/document/d/1Odznuzwtb1ecDOm2t6ToZd4MuMXXfO6vWUGcxbC6mFs/edit?tab=t.0#bookmark=kix.2dz0x0nie3me)
 
 ### Judge quick links (all materials)
@@ -30,10 +31,12 @@ suggested_hardware: cpu-basic
 | **OpenEnv + TRL (framework docs)** | [Hugging Face TRL — OpenEnv integration](https://huggingface.co/docs/trl/openenv) |
 | **Hugging Face Space (submit this URL)** | [huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE) |
 | **Source code** | [github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2) |
-| **Mini-blog (writeup)** | [MINI_BLOG.md](MINI_BLOG.md) in repo |
+| **Blog (writeup)** | [BLOG.md](BLOG.md) in repo |
 | **Training Colab (author Drive)** | [Colab notebook](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing) |
+| **Colab model + adapter training** | https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing |
 | **Training Colab (synced from GitHub)** | [FORGE_Training_Colab.ipynb on Colab](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
 | **Trained adapter** | [sanjay7676/forge-qwen-final](https://huggingface.co/sanjay7676/forge-qwen-final) |
+| **Docker image (public — anyone can pull)** | **Hub (tags, README):** [hub.docker.com/r/sanjay767676/forge](https://hub.docker.com/r/sanjay767676/forge) — **pull:** `docker pull sanjay767676/forge:latest` — **registry ref:** `docker.io/sanjay767676/forge:latest` |
 | **Command / security cheat sheet** | [guide.md](guide.md) |
 | **Video / slides** | YouTube demo placeholder: https://youtube.com/watch?v=YOUR_DEMO_VIDEO_ID |
 
@@ -44,6 +47,25 @@ suggested_hardware: cpu-basic
 - For a stable demo on CPU, set Space secret **`CODE_PROVIDER_MODE=mock`** (or use **NIM** / **OpenRouter** keys so the router never loads local `custom_hf`). Loading **`Qwen2.5-Coder-1.5B` + LoRA** on free CPU is likely to **OOM or time out**.
 - Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
 
+### OpenEnv HTTP API on the Hugging Face Space
+
+The Space runs the same FastAPI routes as [`api_server.py`](api_server.py) on the **app root** (Gradio UI is at **`/ui`**; `/` redirects to `/ui`). There is **no `/start`** endpoint — begin an episode with **`POST /reset`**, then drive it with **`POST /step`**.
+
+1. **Base URL:** open the live Space, then use the **`*.hf.space`** host shown in the address bar (for this project it is typically **`https://sanjay7676-team404-forge.hf.space`**). If yours differs, copy it from the running app or from the Space **Embed** snippet.
+2. **Check liveness:** `curl -sS "https://sanjay7676-team404-forge.hf.space/health"`
+3. **New episode:** `curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/reset" -H "Content-Type: application/json"`
+4. **Step** (JSON body must include `coder_code` and `coder_version`; omit `candidate_solutions` or send a JSON array of strings):
+
+```bash
+curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
+  -H "Content-Type: application/json" \
+  -d "{\"coder_code\": \"def solution(arr):\\n    return sorted(list(arr))\", \"coder_version\": \"demo\"}"
+```
+
+5. **Observe state:** `curl -sS "https://sanjay7676-team404-forge.hf.space/state"`
+
+**Note:** The Space shares **one** in-memory environment across all visitors — concurrent `reset` / `step` calls can interleave. For isolated runs, use **Docker** or **local** `api_server.py` on port `8000`.
+
 ### NOTE 1 — Non‑negotiable submission requirements (checklist)
 
 | # | Requirement | FORGE-v4 |
@@ -51,7 +73,7 @@ suggested_hardware: cpu-basic
 | 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Training extras in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
 | 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
 | 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
-| 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[MINI_BLOG.md](MINI_BLOG.md)** linked here; add **public YouTube or slide URL** in the table row when published. |
+| 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[BLOG.md](BLOG.md)** linked here; add **public YouTube or slide URL** in the table row when published. |
 | 5 | **Hugging Face Space:** discoverable & runnable | **[Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)** — **use this URL in the submission form.** |
 | 6 | **README:** motivate, explain env, show results + **link Space + all materials** | This file. |
 | 7 | **No huge video files** on Hub | Only **URLs** to external video/slides (see table). |
@@ -77,7 +99,7 @@ suggested_hardware: cpu-basic
 
 ## Minimum submission checklist (summary)
 
-Same items as **NOTE 1** above: OpenEnv dependency + wrapper, Colab + training scripts, committed plots/JSON, writeup link, runnable Space URL, README hub — all linked from the **Judge quick links** table.
+Same items as **NOTE 1** above: OpenEnv dependency + wrapper, Colab + training scripts, committed plots/JSON, writeup link, runnable Space URL, **public Docker image** ([Hub](https://hub.docker.com/r/sanjay767676/forge) + `docker pull sanjay767676/forge:latest`), README hub — all linked from the **Judge quick links** table.
 
 ---
 
@@ -303,6 +325,11 @@ python train_unsloth.py --mode dpo
 ## Docker / Compose
 
 Public image on **Docker Hub**: **`sanjay767676/forge`** (repository `forge` under user `sanjay767676`).
+
+| What | URL / reference |
+| :-- | :-- |
+| **Browse image (tags, description)** | [https://hub.docker.com/r/sanjay767676/forge](https://hub.docker.com/r/sanjay767676/forge) |
+| **Pull from CLI** | `docker pull sanjay767676/forge:latest` (same as `docker pull docker.io/sanjay767676/forge:latest`) |
 
 ### Pull & run (no build — public image)
 

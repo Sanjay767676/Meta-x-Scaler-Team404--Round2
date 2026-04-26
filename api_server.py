@@ -30,7 +30,8 @@ async def reset():
 async def step(action: Action):
     """Perform a step in the environment."""
     try:
-        result = env.step(action.model_dump())
+        # exclude_none: otherwise candidate_solutions=None breaks env (get() returns None, not default []).
+        result = env.step(action.model_dump(exclude_none=True))
         return result
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))

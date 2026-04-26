@@ -162,13 +162,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Tab("3. API Endpoints"):
         gr.Markdown("""
         ### OpenEnv API Standard
-        FORGE-v4 exposes a FastAPI server (available at `:8000` when running locally) with the following endpoints:
-        
-        - **`POST /reset`**: Initializes a new episode and returns the problem description.
-        - **`POST /step`**: Receives code candidates, evaluates them, and returns rewards/diagnostics.
-        - **`GET /state`**: Returns current environment status and memory summary.
-        
-        These endpoints allow external agents to interface with FORGE-v4 programmatically.
+        FORGE-v4 exposes a FastAPI server on the **same origin** as this UI: routes live at the **site root**, while Gradio is under **`/ui`**. Locally, `python api_server.py` serves on **`:8000`**; on this Space, use your **`*.hf.space`** base URL (no separate `/start` — use **`POST /reset`** then **`POST /step`**).
+
+        - **`GET /health`**: Liveness / version check.
+        - **`POST /reset`**: Starts a new episode and returns the initial state.
+        - **`POST /step`**: JSON body: `coder_code`, `coder_version`, optional `candidate_solutions` (array of strings). Returns rewards and updated state.
+        - **`GET /state`**: Current environment snapshot.
+
+        **Example (replace `BASE` with your Space `https://….hf.space` host):**  
+        `curl -sS "$BASE/health"` → `curl -sS -X POST "$BASE/reset" -H "Content-Type: application/json"` → `curl -sS -X POST "$BASE/step" -H "Content-Type: application/json" -d '{"coder_code":"def solution(arr):\\n    return sorted(list(arr))","coder_version":"demo"}'`
         """)
 
     # Event handlers

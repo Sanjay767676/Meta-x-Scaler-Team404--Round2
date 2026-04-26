@@ -120,7 +120,7 @@ class FORGEEnv:
 
         coder_code = action.get("coder_code", "")
         coder_version = action.get("coder_version", "unknown")
-        candidate_solutions = action.get("candidate_solutions", [])
+        candidate_solutions = action.get("candidate_solutions") or []
         if not isinstance(coder_code, str):
             raise TypeError("action['coder_code'] must be a string.")
         if not isinstance(coder_version, str):
