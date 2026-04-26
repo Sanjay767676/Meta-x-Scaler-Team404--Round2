@@ -286,28 +286,40 @@ python train_unsloth.py --mode dpo
 
 ## Docker / Compose
 
-FORGE can also be run via Docker. A pre-built image is automatically published to the GitHub Container Registry. You can pull and run it directly without building:
+Public images live on **Docker Hub** (replace `YOUR_DOCKERHUB_USERNAME` with your Docker Hub user; repository name below is `forge` — use any public repo name you pushed).
+
+### Pull & run (no build — public image)
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/sanjay767676/meta-x-scaler-team404--round2:latest
-
-# Run the Gradio UI
-docker run -p 7860:7860 ghcr.io/sanjay767676/meta-x-scaler-team404--round2:latest
+docker pull YOUR_DOCKERHUB_USERNAME/forge:latest
+docker run -p 7860:7860 -e CODE_PROVIDER_MODE=mock YOUR_DOCKERHUB_USERNAME/forge:latest
 ```
 
-Alternatively, you can use Docker Compose to run both the API and UI services locally:
+Anyone can `docker pull` a **public** image without logging in. `docker login` is only needed to **push** (or to pull **private** images).
+
+### Build locally, tag, and push to Docker Hub (one-time)
+
+```bash
+cd /path/to/FORGE
+docker build -t forge:latest .
+
+# Log in (opens browser or prompts for password / access token)
+docker login -u YOUR_DOCKERHUB_USERNAME
+
+docker tag forge:latest YOUR_DOCKERHUB_USERNAME/forge:latest
+docker push YOUR_DOCKERHUB_USERNAME/forge:latest
+```
+
+Use a [Docker Hub access token](https://docs.docker.com/docker-hub/access-tokens/) as the password when `docker login` asks for one.
+
+### Compose (API + UI)
 
 - **`forge-api`** → FastAPI OpenEnv server on `http://localhost:8000`
 - **`forge-ui`** → Gradio app on `http://localhost:7860`
 
-Files:
+Files: [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml), [`.dockerignore`](.dockerignore)
 
-- [`Dockerfile`](Dockerfile)
-- [`docker-compose.yml`](docker-compose.yml)
-- [`.dockerignore`](.dockerignore)
-
-Run from source:
+Build and run from this repo:
 
 ```bash
 docker compose build
