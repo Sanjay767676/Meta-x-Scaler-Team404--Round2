@@ -1,4 +1,4 @@
-"""Deterministic final fallback — always returns valid FORGE `solution(arr)` code."""
+"""Deterministic baseline provider — always returns valid FORGE `solution(arr)` code."""
 
 from __future__ import annotations
 
@@ -6,26 +6,26 @@ import logging
 
 from forge.llm_types import LLMResponse
 
-logger = logging.getLogger("forge.mock")
+logger = logging.getLogger("forge.offline_baseline")
 
 # FORGE sandbox requires callable solution(arr), not solve(arr).
-MOCK_SOLUTION = (
+BASELINE_SOLUTION = (
     "def solution(arr):\n"
     "    return sorted(arr)\n"
 )
 
 
 class MockProvider:
-    name = "mock"
+    name = "offline"
 
-    def __init__(self, model_id: str = "forge-mock") -> None:
+    def __init__(self, model_id: str = "forge-baseline") -> None:
         self.model_id = model_id
 
     def generate(self, prompt: str, system_prompt: str = "") -> LLMResponse:
-        logger.info("[mock] returning deterministic sorted(arr) solution")
+        logger.info("[offline_baseline] returning deterministic sorted(arr) solution")
         return LLMResponse(
             provider=self.name,
             model=self.model_id,
-            content=MOCK_SOLUTION,
-            raw={"mode": "deterministic_mock"},
+            content=BASELINE_SOLUTION,
+            raw={"mode": "deterministic_baseline"},
         )

@@ -34,7 +34,7 @@ class BaseLLMProvider:
 class MockFallbackProvider(BaseLLMProvider):
     """Deterministic fallback provider for offline/dev use."""
 
-    name = "mock"
+    name = "offline"
 
     def generate(self, prompt: str, system_prompt: str = "") -> LLMResponse:
         content = (
@@ -278,6 +278,8 @@ class NvidiaNIMProvider(BaseLLMProvider):
 def get_provider(provider_name: str = LLM_PROVIDER) -> BaseLLMProvider:
     """Factory for active provider."""
     name = (provider_name or "").strip().lower()
+    if name in ("offline", "mock"):
+        return MockFallbackProvider()
     if name == "openrouter":
         return OpenRouterProvider()
     if name in ("hf_api", "huggingface_api"):
@@ -286,7 +288,7 @@ def get_provider(provider_name: str = LLM_PROVIDER) -> BaseLLMProvider:
         return HuggingFaceLocalProvider()
     if name == "nim":
         return NvidiaNIMProvider()
-    return MockFallbackProvider()
+    return MockFallbackProvider()  # unknown name → same as offline
 
 
 def extract_python_code(text: str) -> str:
@@ -300,7 +302,7 @@ def extract_python_code(text: str) -> str:
     return text.strip()
 
 
-def generate_code(prompt: str, provider: str = "auto", system_prompt: str = "") -> str:
+def generate_code(prompt: str, provider: str = "offline", system_prompt: str = "") -> str:
     """Unified entry: modular router (auto) or explicit backend (see forge/providers/router.py)."""
     from forge.providers.router import get_inference_router
 

@@ -6,7 +6,7 @@ services:
     image: forge:latest
     command: python api_server.py
     environment:
-      CODE_PROVIDER_MODE: mock
+      CODE_PROVIDER_MODE: offline
       PYTHONUNBUFFERED: "1"
     ports:
       - "8000:8000"
@@ -29,7 +29,7 @@ services:
     image: forge:latest
     command: python app.py
     environment:
-      CODE_PROVIDER_MODE: mock
+      CODE_PROVIDER_MODE: offline
       PYTHONUNBUFFERED: "1"
     ports:
       - "7860:7860"

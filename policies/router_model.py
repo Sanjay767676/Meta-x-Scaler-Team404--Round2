@@ -1,4 +1,4 @@
-"""Defender policy using the FORGE inference router (auto: NIM → OpenRouter → optional HF → mock)."""
+"""Defender policy using the FORGE inference router (auto: NIM → OpenRouter → optional HF → offline baseline)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from policies.base import CodeCandidate, CoderPolicy
 
 
 class RouterModelPolicy(CoderPolicy):
-    """Generate candidates via modular router; never crashes — mock ends the chain."""
+    """Generate candidates via modular router; never crashes — offline baseline ends the chain."""
 
     name = "model"
 
@@ -50,13 +50,13 @@ class RouterModelPolicy(CoderPolicy):
                 )
             )
         if not candidates:
-            fallback = self.router.generate(prompt, self.system_prompt, mode="mock")
+            fallback = self.router.generate(prompt, self.system_prompt, mode="offline")
             code = extract_python_code(fallback.content)
             if code:
                 candidates.append(
                     CodeCandidate(
                         code=code,
-                        source="router:mock_fallback",
+                        source="router:offline_fallback",
                         metadata={"candidate_idx": 0},
                     )
                 )

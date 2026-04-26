@@ -1,8 +1,8 @@
 """Ordered inference router.
 
 * **auto:** nim → openrouter → (optional **custom_hf** if `HF_TOKEN` / `HUGGING_FACE_HUB_TOKEN`
-  is set) → mock. Without a Hub token, local HF is skipped so CPU Spaces stay responsive.
-* **Explicit modes** call one provider (with fallback to mock where implemented).
+  is set) → offline baseline. Without a Hub token, local HF is skipped so CPU Spaces stay responsive.
+* **Explicit modes** call one provider (with fallback to offline baseline where implemented).
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ class InferenceRouter:
 
     def generate(self, prompt: str, system_prompt: str = "", mode: str = "auto") -> LLMResponse:
         mode = (mode or "auto").strip().lower()
-        if mode == "mock":
+        if mode in ("offline", "mock"):
             return self._mock.generate(prompt, system_prompt)
 
         if mode == "custom_hf":
@@ -95,7 +95,7 @@ class InferenceRouter:
         if mode == "openrouter":
             return self._try_openrouter(prompt, system_prompt, fallback=True)
 
-        # auto: cloud APIs first; local HF only if a Hub token is configured (still last before mock).
+        # auto: cloud APIs first; local HF only if a Hub token is configured (still last before offline baseline).
         auto_steps: list[tuple[str, Callable[[], LLMResponse]]] = [
             ("nim", lambda: self._try_nim(prompt, system_prompt, fallback=False)),
             ("openrouter", lambda: self._try_openrouter(prompt, system_prompt, fallback=False)),
@@ -110,7 +110,7 @@ class InferenceRouter:
             except Exception as exc:  # noqa: BLE001
                 logger.warning("[router] %s failed (%s), trying next provider", label, exc)
 
-        logger.warning("[router] all remote providers failed; using mock")
+        logger.warning("[router] all remote providers failed; using offline baseline")
         return self._mock.generate(prompt, system_prompt)
 
     def _try_hf(self, prompt: str, system_prompt: str, fallback: bool) -> LLMResponse:

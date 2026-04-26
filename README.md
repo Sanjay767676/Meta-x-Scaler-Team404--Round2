@@ -44,7 +44,7 @@ suggested_hardware: cpu-basic
 
 - This repo’s **Space README** sets **`suggested_hardware: cpu-basic`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Pick CPU hardware in the Space Settings UI** if you are not on GPU.
 - **`requirements.txt`** is intentionally **light** (no PyTorch / bitsandbytes) so CPU Spaces **build and start** reliably.
-- For a **CPU-only** Space, prefer Gradio provider **`mock`** or **`auto`** with **NIM / OpenRouter** keys; local **`custom_hf`** loads PyTorch and a 1.5B+LoRA stack and may **OOM or time out** on free CPU.
+- For a **CPU-only** Space, prefer Gradio provider **`offline`** (instant deterministic baseline) or **`auto`** with **NIM / OpenRouter** keys; local **`custom_hf`** loads PyTorch and a 1.5B+LoRA stack and may **OOM or time out** on free CPU.
 - **Repository secrets:** names must match environment variables exactly (see table below). After adding or changing secrets, **restart the Space** (or trigger a rebuild) so the container picks them up.
 - Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
 
@@ -155,7 +155,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
 2. **Tiered Breaker** — difficulty ramps with performance.  
 3. **CoachMemory** — failures become lessons, not noise.  
 4. **Real post-training path** — preference data from the env feeds repeated short **DPO / GRPO** adapter workflows on a small coder model.  
-5. **Inference router** — **`auto`** order: **NIM → OpenRouter → custom HF (only if `HF_TOKEN` is set) → deterministic mock**. Use **`mock`** alone for instant CPU demos; omit **`HF_TOKEN`** in Spaces if you do not want `auto` to attempt local HF.
+5. **Inference router** — **`auto`** order: **NIM → OpenRouter → custom HF (only if `HF_TOKEN` is set) → offline deterministic baseline**. Use **`offline`** alone for instant CPU demos; omit **`HF_TOKEN`** in Spaces if you do not want `auto` to attempt local HF.
 
 ---
 
@@ -182,7 +182,7 @@ Coding models look strong on friendly prompts but **fail in production** when in
               |               |               |
      +--------v----+   +------v------+        |
      | custom_hf   |   | nim         |        |
-     | openrouter  |   | mock        |        |
+     | openrouter  |   | offline     |        |
      +-------------+   +-------------+        |
               |               |               |
               +-------+-------+---------------+
@@ -270,9 +270,9 @@ Configured in **`config.py`** / **`.env`** (see **`.env.example`**). **Never com
 | 1 | **`custom_hf`** | `transformers` + **PEFT** — base `BASE_MODEL_ID` + adapter `HF_MODEL_ID` |
 | 2 | **`nim`** | NVIDIA NIM OpenAI-compatible **`/v1/chat/completions`** |
 | 3 | **`openrouter`** | OpenRouter chat completions |
-| 4 | **`mock`** | Deterministic `solution(arr)` → `sorted(arr)` (offline guarantee) |
+| 4 | **`offline`** | Deterministic `solution(arr)` → `sorted(arr)` (baseline, no external APIs) |
 
-**Modes:** `mock` (default, instant), `auto` (NIM → OpenRouter → optional HF if Hub token → mock), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **mock**. CLI example: `python train_colab.py --compare --forge-provider auto`.
+**Modes:** `offline` (default, instant), `auto` (NIM → OpenRouter → optional HF if Hub token → offline baseline), or force `custom_hf` / `nim` / `openrouter`. Gradio **Inference provider** defaults to **offline**. CLI example: `python train_colab.py --compare --forge-provider auto`.
 
 For training, our intended workflow is different from inference routing: we default to a **small local base model with 4-bit LoRA adapters** so we can complete many successful runs in limited compute.
 
@@ -284,7 +284,7 @@ Implementation: `forge/providers/*.py`, orchestration in `forge/providers/router
 
 **Hugging Face Space:** [https://huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
 
-Deployment note: as of the latest verification, the Space URL is serving the Gradio UI, but the root-level JSON API endpoints are not directly exposed there in the same way as the local FastAPI server. In local/container runs, use the dedicated API server on port `8000` for `POST /reset`, `POST /step`, `GET /state`, and `GET /health`.
+The Space serves **Gradio at `/`** and the same **OpenEnv-style JSON routes** (`/health`, `/reset`, `/step`, `/state`) on the same host. **`POST /reset`** reseeds Python’s RNG so eval harnesses get a **deterministic** first task each episode. For local-only API, run `api_server.py` on port `8000` (see Docker Compose).
 
 ---
 
@@ -303,7 +303,7 @@ Deployment note: as of the latest verification, the Space URL is serving the Gra
 - **Theme fit:** self-improvement (memory + curriculum + training export) and multi-agent (Defender vs Breaker) are first-class, not bolted on.  
 - **OpenEnv:** manifest + REST parity + clear state machine.  
 - **Credibility:** real adapter on HF, Colab training link, reproducible benchmark scripts, and a **small-model-first** training strategy that is realistic for hackathon hardware.  
-- **Reliability:** router **always** lands on mock if cloud paths fail—**zero demo bricking** from a missing key.
+- **Reliability:** router **always** lands on the offline baseline if cloud paths fail—**zero demo bricking** from a missing key.
 
 ---
 
@@ -349,14 +349,14 @@ Public image on **Docker Hub**: **`sanjay767676/forge`** (repository `forge` und
 
 ```bash
 docker pull sanjay767676/forge:latest
-docker run -p 7860:7860 -e CODE_PROVIDER_MODE=mock sanjay767676/forge:latest
+docker run -p 7860:7860 -e CODE_PROVIDER_MODE=offline sanjay767676/forge:latest
 ```
 
 Anyone can `docker pull` a **public** image without logging in. `docker login` is only needed to **push** (or to pull **private** images).
 
 ### Build locally, tag, and push to Docker Hub (one-time)
 
-**Fast image (default `Dockerfile`):** only `requirements.txt` — no PyTorch. Usually **a few minutes**. Good for demo, Gradio, and `CODE_PROVIDER_MODE=mock` (or API-backed providers).
+**Fast image (default `Dockerfile`):** only `requirements.txt` — no PyTorch. Usually **a few minutes**. Good for demo, Gradio, and `CODE_PROVIDER_MODE=offline` (or API-backed providers).
 
 **Full training image:** [`Dockerfile.train`](Dockerfile.train) adds `requirements-train.txt` (PyTorch + CUDA wheels). Expect **tens of minutes to an hour+** on first build.
 
@@ -398,7 +398,7 @@ curl http://localhost:8000/state
 curl -X POST http://localhost:8000/reset
 ```
 
-The Compose setup defaults to `CODE_PROVIDER_MODE=mock` so the stack can start without external API keys, while still preserving the full local API contract.
+The Compose setup defaults to `CODE_PROVIDER_MODE=offline` so the stack can start without external API keys, while still preserving the full local API contract.
 
 ## Security note
 

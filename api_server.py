@@ -1,11 +1,14 @@
 # api_server.py
 # FastAPI wrapper for FORGE-v4 Environment (OpenEnv standard).
 
+import random
+from typing import Any, List, Optional
+
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Any, Optional, List
-import uvicorn
 
+from config import GLOBAL_RANDOM_SEED
 from env import FORGEEnv
 from memory import CoachMemory
 
@@ -23,6 +26,8 @@ class Action(BaseModel):
 @app.post("/reset")
 async def reset():
     """Reset the environment and return the initial state."""
+    # Deterministic task generation for eval harnesses (same seed every episode start).
+    random.seed(GLOBAL_RANDOM_SEED)
     state = env.reset()
     return state
 

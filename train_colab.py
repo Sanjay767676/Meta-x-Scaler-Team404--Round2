@@ -59,7 +59,7 @@ def main():
         type=str,
         default=None,
         metavar="MODE",
-        help="Inference mode for policy=model: auto|custom_hf|nim|openrouter|mock (default: config CODE_PROVIDER_MODE)",
+        help="Inference mode for policy=model: auto|custom_hf|nim|openrouter|offline (default: config CODE_PROVIDER_MODE)",
     )
 
     args = parser.parse_args()

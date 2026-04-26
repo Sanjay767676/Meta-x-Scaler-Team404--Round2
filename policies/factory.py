@@ -20,18 +20,18 @@ def build_policy(
 ) -> CoderPolicy:
     """Build a policy by short name.
 
-    Supported names: heuristic | api | local | mock | model.
+    Supported names: heuristic | api | local | offline | model (legacy: mock → offline).
     """
     normalized = (name or "").strip().lower()
     if normalized == "api":
         return APIModelPolicy()
     if normalized == "local":
         return LocalModelPolicy()
-    if normalized == "mock":
+    if normalized in ("offline", "mock"):
         return MockModelPolicy(memory=memory)
     if normalized == "model":
         from policies.router_model import RouterModelPolicy
 
-        # auto: see forge/providers/router.py (NIM → OpenRouter → HF if HF_TOKEN → mock)
+        # auto: see forge/providers/router.py (NIM → OpenRouter → HF if HF_TOKEN → offline baseline)
         return RouterModelPolicy(memory=memory, mode=forge_provider)
     return HeuristicPolicy(strategy=strategy)

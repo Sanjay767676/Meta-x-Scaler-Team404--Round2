@@ -39,8 +39,8 @@ def get_memory_lessons() -> str:
         output += f"{idx+1}. Episode {lesson.get('episode')}: {lesson.get('coach_note')} (Weight: {lesson.get('reward_weight')})\n"
     return output
 
-# mock first in the list so the Space demo defaults to instant deterministic runs.
-FORGE_PROVIDER_OPTIONS = ["mock", "auto", "nim", "openrouter", "custom_hf"]
+# Offline baseline first — instant deterministic runs for Spaces and demos.
+FORGE_PROVIDER_OPTIONS = ["offline", "auto", "nim", "openrouter", "custom_hf"]
 
 
 def run_benchmark_ui(episodes, forge_provider_label: str):
@@ -48,8 +48,8 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
     # Limit episodes for demo stability on CPU
     ep_count = min(int(episodes), 5)
     mode = forge_provider_label if forge_provider_label in (
-        "auto", "custom_hf", "nim", "openrouter", "mock"
-    ) else "mock"
+        "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
+    ) else "offline"
     report = run_benchmark_mode(
         policy_name="model",
         episodes=ep_count,
@@ -79,8 +79,8 @@ def run_compare_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for compare mode."""
     ep_count = min(int(episodes), 3)  # Very small for demo
     mode = forge_provider_label if forge_provider_label in (
-        "auto", "custom_hf", "nim", "openrouter", "mock"
-    ) else "mock"
+        "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
+    ) else "offline"
     report = run_compare_mode(
         model_policy_name="model",
         episodes=ep_count,
@@ -133,9 +133,9 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             episodes_input = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Episodes (Limited for Demo)")
             provider_input = gr.Dropdown(
                 choices=FORGE_PROVIDER_OPTIONS,
-                value="mock",
+                value="offline",
                 label="Inference provider",
-                info="**mock** = instant. **auto** = NIM → OpenRouter → local HF only if Space secret **HF_TOKEN** is set → else mock. **custom_hf** always uses local PyTorch (can be slow on CPU).",
+                info="**Offline** = instant deterministic baseline. **auto** = NIM → OpenRouter → local HF only if Space secret **HF_TOKEN** is set → else offline. **custom_hf** always uses local PyTorch (can be slow on CPU).",
             )
         
         with gr.Row():

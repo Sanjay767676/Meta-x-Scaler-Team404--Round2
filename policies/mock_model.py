@@ -9,10 +9,10 @@ class MockModelPolicy(CoderPolicy):
     Simulates an improving LLM policy that reads memory to handle edge cases.
     """
 
-    name = "mock"
+    name = "offline"
 
     def __init__(self, memory: CoachMemory | None = None) -> None:
-        self.provider = get_provider("mock")
+        self.provider = get_provider("offline")
         self.memory = memory or CoachMemory()
 
     def generate_candidates(self, state: dict[str, Any], num_candidates: int) -> list[CodeCandidate]:
@@ -42,7 +42,7 @@ class MockModelPolicy(CoderPolicy):
                     "    if not isinstance(arr, list): return []\n"
                     "    return sorted(list(arr))\n"
                 )
-                source = "mock:model:robust"
+                source = "baseline:model:robust"
             else:
                 # Default "Naive" strategy for early episodes
                 if i == 0:
@@ -56,13 +56,13 @@ class MockModelPolicy(CoderPolicy):
                         "    greater = [x for x in arr[1:] if x >= pivot]\n"
                         "    return solution(less) + [pivot] + solution(greater)\n"
                     )
-                    source = "mock:model:naive"
+                    source = "baseline:model:naive"
                 else:
                     code = (
                         "def solution(arr):\n"
                         "    return sorted(list(arr))\n"
                     )
-                    source = "mock:model:standard"
+                    source = "baseline:model:standard"
 
             candidates.append(
                 CodeCandidate(

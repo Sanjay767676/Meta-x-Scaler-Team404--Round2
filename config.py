@@ -85,7 +85,7 @@ DEFAULT_CANDIDATES_PER_STEP = 3
 GLOBAL_RANDOM_SEED = 42
 
 # LLM provider configuration (legacy + local policies)
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock")  # mock | openrouter | hf_api | huggingface_local | nim
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "offline")  # offline | openrouter | hf_api | huggingface_local | nim
 LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen2.5-coder-0.5b-instruct")
 HF_LOCAL_MODEL_ID = os.getenv("HF_LOCAL_MODEL_ID", "qwen/qwen2.5-coder-0.5b-instruct")
 
@@ -108,8 +108,9 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen2.5-coder-7b-instruct
 
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HUGGING_FACE_HUB_TOKEN", ""))
 
-# Policy "model" routing: mock | auto | custom_hf | nim | openrouter
-CODE_PROVIDER_MODE = os.getenv("CODE_PROVIDER_MODE", "mock")
+# Policy "model" routing: offline | auto | custom_hf | nim | openrouter (legacy env value "mock" == offline)
+_CODE_PROVIDER_RAW = os.getenv("CODE_PROVIDER_MODE", "offline").strip().lower()
+CODE_PROVIDER_MODE = "offline" if _CODE_PROVIDER_RAW in ("", "mock") else _CODE_PROVIDER_RAW
 
 # Per-provider HTTP / wrapped inference timeouts (seconds)
 # Local HF load+infer can exceed 60s on cold CPU; default cap keeps Gradio responsive (raise via env on GPU).

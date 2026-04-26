@@ -19,6 +19,7 @@ env/
 # Data
 data/*.json
 !data/dpo_dataset.jsonl
+*.tmp
 
 # Logs (judge evidence only)
 logs/*

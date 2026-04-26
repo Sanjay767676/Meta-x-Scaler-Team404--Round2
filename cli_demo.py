@@ -221,7 +221,7 @@ def _print_help() -> None:
     print("                      weak_coder_v2   (selection sort + abs() bug)")
     print("                      improving_coder (adapts each episode)  [default]")
     print("  --steps N         Override STEPS_PER_EPISODE for this run")
-    print("  --policy NAME     Defender policy: heuristic | api | local | mock | model")
+    print("  --policy NAME     Defender policy: heuristic | api | local | offline | model")
     print("  --candidates N    Candidate solutions to evaluate per step")
     print("  --charts          Generate trend charts in outputs/")
     print("  --benchmark N     Run benchmark mode for N episodes (minimum 20)")
@@ -268,10 +268,10 @@ def main() -> None:
         idx = args.index("--policy")
         try:
             policy_name = args[idx + 1].strip().lower()
-            if policy_name not in ("heuristic", "api", "local", "mock", "model"):
+            if policy_name not in ("heuristic", "api", "local", "offline", "mock", "model"):
                 raise ValueError(policy_name)
         except (IndexError, ValueError):
-            print("Error: --policy must be one of: heuristic, api, local, mock, model.")
+            print("Error: --policy must be one of: heuristic, api, local, offline, model.")
             sys.exit(1)
 
     if "--candidates" in args:
