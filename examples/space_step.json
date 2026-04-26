@@ -1,0 +1,1 @@
+{"coder_code": "def solution(arr):\n    return sorted(list(arr))", "coder_version": "demo"}

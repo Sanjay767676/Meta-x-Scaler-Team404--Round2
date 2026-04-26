@@ -49,7 +49,7 @@ suggested_hardware: cpu-basic
 
 ### OpenEnv HTTP API on the Hugging Face Space
 
-The Space runs the same FastAPI routes as [`api_server.py`](api_server.py) on the **app root** (Gradio UI is at **`/ui`**; `/` redirects to `/ui`). There is **no `/start`** endpoint — begin an episode with **`POST /reset`**, then drive it with **`POST /step`**.
+The Space runs the same FastAPI routes as [`api_server.py`](api_server.py) on the **app root**, with **Gradio at `/`** (same host as `/health`, `/reset`, `/step`, `/state`). There is **no `/start`** endpoint — begin an episode with **`POST /reset`**, then drive it with **`POST /step`**.
 
 1. **Base URL:** open the live Space, then use the **`*.hf.space`** host shown in the address bar (for this project it is typically **`https://sanjay7676-team404-forge.hf.space`**). If yours differs, copy it from the running app or from the Space **Embed** snippet.
 2. **Check liveness:** `curl -sS "https://sanjay7676-team404-forge.hf.space/health"`
@@ -63,6 +63,12 @@ curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
 ```
 
 5. **Observe state:** `curl -sS "https://sanjay7676-team404-forge.hf.space/state"`
+
+**Windows `curl` + `@step.json`:** `curl` resolves the file **relative to your current directory**. Either `cd` into the folder that contains `step.json`, or pass a full path, for example:
+
+`curl.exe ... --data-binary "@examples/space_step.json"` (from repo root) or any **absolute** path to your JSON file.
+
+**If the Hub “App” tab is blank:** open the **direct** Space URL in a new tab — `https://sanjay7676-team404-forge.hf.space/` (Gradio UI should load there). Allow third-party cookies for `huggingface.co` if the embedded App tab stays empty ([HF discussion](https://discuss.huggingface.co/t/cant-able-to-see-ui-when-the-model-is-running/56373)).
 
 **Note:** The Space shares **one** in-memory environment across all visitors — concurrent `reset` / `step` calls can interleave. For isolated runs, use **Docker** or **local** `api_server.py` on port `8000`.
 

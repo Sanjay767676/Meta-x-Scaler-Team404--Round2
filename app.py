@@ -4,7 +4,6 @@ import gradio as gr
 import pandas as pd
 from typing import Any, Dict
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
 
 from trainer import run_benchmark_mode, run_compare_mode
 from memory import CoachMemory
@@ -162,7 +161,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
     with gr.Tab("3. API Endpoints"):
         gr.Markdown("""
         ### OpenEnv API Standard
-        FORGE-v4 exposes a FastAPI server on the **same origin** as this UI: routes live at the **site root**, while Gradio is under **`/ui`**. Locally, `python api_server.py` serves on **`:8000`**; on this Space, use your **`*.hf.space`** base URL (no separate `/start` — use **`POST /reset`** then **`POST /step`**).
+        FORGE-v4 serves **Gradio at `/`** and the OpenEnv JSON routes at the **same origin** (`/health`, `/reset`, `/step`, `/state`). Locally, `python api_server.py` serves **API-only** on **`:8000`**; `python app.py` serves UI **+** API on **`:7860`**. On this Space, use your **`*.hf.space`** base URL (no `/start` — use **`POST /reset`** then **`POST /step`**).
 
         - **`GET /health`**: Liveness / version check.
         - **`POST /reset`**: Starts a new episode and returns the initial state.
@@ -185,15 +184,15 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         outputs=[m_pass, m_def_reward, m_adv_reward, m_tier, plot_reward, plot_pass, memory_output],
     )
 
-space_app = gr.mount_gradio_app(api_app, demo, path="/ui")
-
-
-@space_app.get("/")
-async def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/ui", status_code=302)
-
-
-app = space_app
+# Mount Gradio at "/" so Hugging Face Spaces (hub iframe + *.hf.space) load assets and
+# websockets from the same root. OpenEnv routes on api_app are registered before this mount
+# and keep precedence over the Gradio catch-all.
+app = gr.mount_gradio_app(
+    api_app,
+    demo,
+    path="/",
+    ssr_mode=False,
+)
 
 
 if __name__ == "__main__":
