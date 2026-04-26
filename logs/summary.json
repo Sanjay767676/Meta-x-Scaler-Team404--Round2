@@ -1,17 +1,17 @@
 {
   "avg_break_rate": 0.0,
-  "avg_breaker_reward": -2.0,
+  "avg_breaker_reward": -10.185,
   "avg_coder_reward": 13.0,
   "avg_pass_rate": 1.0,
   "best_coder_reward": 13.0,
   "coach_memory_summary": {
-    "avg_breaker_reward": -3.3696,
-    "avg_coder_reward": 11.5965,
+    "avg_breaker_reward": -4.0337,
+    "avg_coder_reward": 11.9155,
     "episodes_seen": 20,
     "recent_coach_notes": [
-      "Episode 1: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier",
-      "Episode 1: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier",
-      "Episode 1: Strong performance (pass_rate=1.00) [heuristic] \u2192 breaker should escalate tier"
+      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier",
+      "Episode 20: Strong performance (pass_rate=1.00) [api] \u2192 breaker should escalate tier"
     ],
     "top_lessons": [
       {
@@ -31,11 +31,11 @@
       }
     ],
     "total_lessons": 1000,
-    "weighted_signal": 279440.4825
+    "weighted_signal": 309990.145
   },
-  "coder_version": "heuristic",
-  "final_breaker_tier": 2,
-  "generated_at": "2026-04-26T01:16:16.057034",
-  "total_episodes": 1,
+  "coder_version": "api",
+  "final_breaker_tier": 4,
+  "generated_at": "2026-04-26T01:36:14.427752",
+  "total_episodes": 20,
   "worst_coder_reward": 13.0
 }

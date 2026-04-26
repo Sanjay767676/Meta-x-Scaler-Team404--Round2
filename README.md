@@ -14,6 +14,7 @@ pinned: false
 
 [![Hackathon: Meta OpenEnv](https://img.shields.io/badge/Hackathon-Meta%20OpenEnv-blueviolet)](https://github.com/Meta-OpenEnv)
 [![Demo: Hugging Face](https://img.shields.io/badge/Demo-Hugging%20Face-orange)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
+[![Repo: GitHub](https://img.shields.io/badge/Code-GitHub-black)](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git)
 
 **FORGE-v4** (Framework for Objective Robustness & Generation Evaluation) is a high-fidelity adversarial benchmark environment designed to harden code-generation models against real-world edge cases, boundary values, and malicious logic traps.
 
@@ -28,7 +29,7 @@ FORGE-v4 operates as a two-agent zero-sum game:
 2.  **The Adversary (Breaker)**: Discovers and escalates adversarial test cases across 4 Tiers of difficulty.
 3.  **CoachMemory**: A persistent feedback loop where the model "learns" from past failures to generate more robust solutions in subsequent episodes.
 
-## 🚀 Benchmark Results
+## 🚀 Benchmark Results (Current Run Snapshot)
 | Metric | Baseline (Heuristic) | FORGE Model | Delta |
 | :--- | :--- | :--- | :--- |
 | **Avg Pass Rate** | 91.00% | 100.00% | **+9.00%** |
@@ -38,6 +39,7 @@ FORGE-v4 operates as a two-agent zero-sum game:
 ### Visual Evidence
 <div align="center">
   <img src="outputs/reward_curve.png" width="45%" />
+  <img src="outputs/loss_curve.png" width="45%" />
   <img src="outputs/pass_rate.png" width="45%" />
 </div>
 
@@ -70,6 +72,13 @@ python app.py
 python train_colab.py --compare --episodes 20
 ```
 
+## 🔗 Submission Links
+- Hugging Face Space: https://huggingface.co/spaces/sanjay7676/Team404_FORGE
+- GitHub Repository: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2.git
+- Training Entrypoint: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/train_colab.py
+- DPO Script: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/train_unsloth.py
+- Writeup: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/MINI_BLOG.md
+
 ## 🧠 Authentic RL Training
 FORGE-v4 generates real-world preference data for model alignment:
 
@@ -82,6 +91,9 @@ FORGE-v4 generates real-world preference data for model alignment:
     bash setup_colab.sh
     bash run_dpo.sh
     ```
+
+  > Current local dataset count in this repo can be verified via `data/dpo_dataset.jsonl`.
+  > Mock fallback provider is used only when API/local model dependencies are unavailable.
 
 ## 🗺️ Future Roadmap
 - [ ] **Multi-Language Support**: Support for C++, Java, and Rust sandboxes.

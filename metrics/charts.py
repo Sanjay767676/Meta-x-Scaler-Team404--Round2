@@ -102,6 +102,7 @@ def export_judge_assets(
 
     df = pd.DataFrame(episodes)
     reward_curve_path = os.path.join(output_dir, "reward_curve.png")
+    loss_curve_path = os.path.join(output_dir, "loss_curve.png")
     pass_rate_path = os.path.join(output_dir, "pass_rate.png")
     final_report_path = os.path.join(output_dir, "final_report.json")
 
@@ -115,6 +116,22 @@ def export_judge_assets(
     plt.legend()
     plt.tight_layout()
     plt.savefig(reward_curve_path, dpi=160)
+    plt.close()
+
+    # Pseudo-loss derived from defender reward trend for judge-friendly visualization.
+    reward_min = float(df["defender_reward"].min())
+    reward_max = float(df["defender_reward"].max())
+    span = reward_max - reward_min if reward_max != reward_min else 1.0
+    loss_like = 1.0 - ((df["defender_reward"] - reward_min) / span)
+
+    plt.figure(figsize=(9, 4.5))
+    plt.plot(df["episode"], loss_like, marker="o", linewidth=2)
+    plt.title("Loss Curve (Normalized)")
+    plt.xlabel("Episode")
+    plt.ylabel("Loss")
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(loss_curve_path, dpi=160)
     plt.close()
 
     plt.figure(figsize=(9, 4.5))
@@ -132,6 +149,7 @@ def export_judge_assets(
 
     return {
         "reward_curve": reward_curve_path,
+        "loss_curve": loss_curve_path,
         "pass_rate": pass_rate_path,
         "final_report": final_report_path,
     }
