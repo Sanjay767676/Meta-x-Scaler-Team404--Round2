@@ -16,8 +16,8 @@ python-dotenv>=1.0.1
 # HF Spaces also installs gradio[oauth]==sdk_version from README YAML — keep in sync with sdk_version.
 gradio>=5.18.0,<6
 
-# API / Serving (OpenEnv standard; HF Docker pins fastapi<0.113 — stay compatible)
-fastapi>=0.111.0,<0.113.0
+# API / Serving — Gradio 5.25+ requires fastapi>=0.115.2 (<1.0)
+fastapi>=0.115.2,<1.0
 uvicorn>=0.30.0
 pydantic>=2.7.0
 
