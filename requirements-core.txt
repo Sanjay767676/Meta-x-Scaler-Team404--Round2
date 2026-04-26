@@ -1,0 +1,23 @@
+# FORGE-v4 — slim stack (Docker Hub image, CPU-only local runs, CI).
+# Hugging Face Spaces use root requirements.txt which includes this file plus PyTorch / HF inference.
+
+# OpenEnv (official framework — Meta / HF ecosystem)
+# Needs websockets>=15.1; use Gradio >=5.18 (see README Space sdk_version).
+openenv-core>=0.2.3
+
+# Core
+tqdm>=4.66.0
+numpy>=1.26.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+PyYAML>=6.0.1
+requests>=2.32.0
+python-dotenv>=1.0.1
+
+# HF Spaces installs gradio[oauth]==sdk_version from README YAML — keep sdk_version in sync.
+gradio>=5.18.0,<6
+
+# API — Gradio 5.x needs fastapi>=0.115.2
+fastapi>=0.115.2,<1.0
+uvicorn>=0.30.0
+pydantic>=2.7.0

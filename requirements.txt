@@ -1,23 +1,13 @@
-# FORGE-v4 — default install (Hugging Face CPU Spaces, Gradio demo, API).
-# For training / local_model / HF custom weights, also install: pip install -r requirements-train.txt
+# FORGE-v4 — default install for Hugging Face Spaces (T4 GPU: local HF inference + Gradio + API).
+# Slim installs: use requirements-core.txt only (see Dockerfile).
 
-# OpenEnv (official framework — Meta / HF ecosystem)
-# Needs websockets>=15.1; use Gradio >=5.18 (see README Space sdk_version).
-openenv-core>=0.2.3
+-r requirements-core.txt
 
-# Core
-tqdm>=4.66.0
-numpy>=1.26.0
-pandas>=2.2.0
-matplotlib>=3.8.0
-PyYAML>=6.0.1
-requests>=2.32.0
-python-dotenv>=1.0.1
-
-# HF Spaces installs gradio[oauth]==sdk_version from README YAML — keep sdk_version in sync.
-gradio>=5.18.0,<6
-
-# API — Gradio 5.x needs fastapi>=0.115.2
-fastapi>=0.115.2,<1.0
-uvicorn>=0.30.0
-pydantic>=2.7.0
+# Local Hugging Face inference (custom_hf on GPU Spaces)
+torch>=2.3.0
+transformers>=4.41.0
+trl>=0.9.4
+peft>=0.11.1
+datasets>=2.19.0
+accelerate>=0.30.0
+bitsandbytes>=0.43.1

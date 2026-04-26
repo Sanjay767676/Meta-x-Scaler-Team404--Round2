@@ -33,20 +33,47 @@ def get_memory_lessons() -> str:
     top_lessons = summary.get("top_lessons", [])
     if not top_lessons:
         return "No lessons recorded yet."
-    
+
     output = ""
     for idx, lesson in enumerate(top_lessons):
-        output += f"{idx+1}. Episode {lesson.get('episode')}: {lesson.get('coach_note')} (Weight: {lesson.get('reward_weight')})\n"
+        note = lesson.get("coach_note") or ""
+        w = lesson.get("reward_weight", 0.0)
+        output += f"{idx + 1}. {note} (Weight: {w})\n"
     return output
 
-# Offline baseline first — instant deterministic runs for Spaces and demos.
-FORGE_PROVIDER_OPTIONS = ["offline", "auto", "nim", "openrouter", "custom_hf"]
+
+def _cuda_ready() -> bool:
+    try:
+        import torch  # noqa: PLC0415
+        return bool(torch.cuda.is_available())
+    except ImportError:
+        return False
+
+
+def _ui_provider_options() -> list[str]:
+    # GPU Space: lead with local HF (real weights on T4). CPU: lead with offline so demos stay instant.
+    if _cuda_ready():
+        return ["custom_hf", "auto", "nim", "openrouter", "offline"]
+    return ["offline", "auto", "nim", "openrouter", "custom_hf"]
+
+
+FORGE_PROVIDER_OPTIONS = _ui_provider_options()
+
+
+def default_forge_ui_provider() -> str:
+    override = os.getenv("FORGE_DEFAULT_PROVIDER", "").strip().lower()
+    if override in FORGE_PROVIDER_OPTIONS:
+        return override
+    return "custom_hf" if _cuda_ready() else "offline"
+
+
+def _benchmark_episode_cap() -> int:
+    return 30 if _cuda_ready() else 5
 
 
 def run_benchmark_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for benchmark mode."""
-    # Limit episodes for demo stability on CPU
-    ep_count = min(int(episodes), 5)
+    ep_count = min(int(episodes), _benchmark_episode_cap())
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
     ) else "offline"
@@ -77,7 +104,7 @@ def run_benchmark_ui(episodes, forge_provider_label: str):
 
 def run_compare_ui(episodes, forge_provider_label: str):
     """Gradio wrapper for compare mode."""
-    ep_count = min(int(episodes), 3)  # Very small for demo
+    ep_count = min(int(episodes), 10 if _cuda_ready() else 3)
     mode = forge_provider_label if forge_provider_label in (
         "auto", "custom_hf", "nim", "openrouter", "offline", "mock"
     ) else "offline"
@@ -133,9 +160,13 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
             episodes_input = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Episodes (Limited for Demo)")
             provider_input = gr.Dropdown(
                 choices=FORGE_PROVIDER_OPTIONS,
-                value="offline",
+                value=default_forge_ui_provider(),
                 label="Inference provider",
-                info="**Offline** = instant deterministic baseline. **auto** = NIM → OpenRouter → local HF only if Space secret **HF_TOKEN** is set → else offline. **custom_hf** always uses local PyTorch (can be slow on CPU).",
+                info=(
+                    "**custom_hf** = local PyTorch + Hub weights on this machine (default on **GPU**). "
+                    "**auto** = NIM → OpenRouter → optional local HF if **HF_TOKEN** is set → else offline. "
+                    "**offline** = no external APIs (CPU-friendly fallback)."
+                ),
             )
         
         with gr.Row():
@@ -166,7 +197,7 @@ with gr.Blocks(theme=gr.themes.Soft()) as demo:
         FORGE-v4 serves **Gradio at `/`** and the OpenEnv JSON routes at the **same origin** (`/health`, `/reset`, `/step`, `/state`). Locally, `python api_server.py` serves **API-only** on **`:8000`**; `python app.py` serves UI **+** API on **`:7860`**. On this Space, use your **`*.hf.space`** base URL (no `/start` — use **`POST /reset`** then **`POST /step`**).
 
         - **`GET /health`**: Liveness / version check.
-        - **`POST /reset`**: Starts a new episode and returns the initial state.
+        - **`POST /reset`**: Starts a new episode and returns the initial state (new random task each time unless Space secret **`FORGE_DETERMINISTIC_RESET=1`**).
         - **`POST /step`**: JSON body: `coder_code`, `coder_version`, optional `candidate_solutions` (array of strings). Returns rewards and updated state.
         - **`GET /state`**: Current environment snapshot.
 

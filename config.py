@@ -108,9 +108,25 @@ OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "qwen/qwen2.5-coder-7b-instruct
 
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HUGGING_FACE_HUB_TOKEN", ""))
 
-# Policy "model" routing: offline | auto | custom_hf | nim | openrouter (legacy env value "mock" == offline)
-_CODE_PROVIDER_RAW = os.getenv("CODE_PROVIDER_MODE", "offline").strip().lower()
-CODE_PROVIDER_MODE = "offline" if _CODE_PROVIDER_RAW in ("", "mock") else _CODE_PROVIDER_RAW
+# Policy "model" routing: offline | auto | custom_hf | nim | openrouter (legacy "mock" == offline).
+# If CODE_PROVIDER_MODE is unset: use custom_hf when CUDA is available (GPU Space), else offline.
+
+
+def _default_code_provider_mode() -> str:
+    try:
+        import torch  # noqa: PLC0415 — optional; absent in slim Docker images
+    except ImportError:
+        return "offline"
+    return "custom_hf" if torch.cuda.is_available() else "offline"
+
+
+_code_raw = os.getenv("CODE_PROVIDER_MODE", "").strip().lower()
+if _code_raw == "mock":
+    CODE_PROVIDER_MODE = "offline"
+elif _code_raw:
+    CODE_PROVIDER_MODE = _code_raw
+else:
+    CODE_PROVIDER_MODE = _default_code_provider_mode()
 
 # Per-provider HTTP / wrapped inference timeouts (seconds)
 # Local HF load+infer can exceed 60s on cold CPU; default cap keeps Gradio responsive (raise via env on GPU).

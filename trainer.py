@@ -275,7 +275,7 @@ def run_benchmark_mode(
     forge_provider: str | None = None,
 ) -> dict[str, Any]:
     """Run evidence benchmark and export judge assets."""
-    episodes = max(20, episodes)
+    episodes = max(1, int(episodes))
     summary = train_with_policy_name(
         policy_name=policy_name,
         num_episodes=episodes,

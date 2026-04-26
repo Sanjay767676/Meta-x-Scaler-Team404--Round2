@@ -9,8 +9,8 @@ sdk_version: 5.25.0
 python_version: 3.11
 app_file: app.py
 pinned: false
-# Hint for duplicators; does not upgrade your Space by itself. CPU-friendly demo (no PyTorch in requirements.txt).
-suggested_hardware: cpu-basic
+# Target: NVIDIA T4 Space (local HF inference). CPU-only duplicators: switch hardware in Space Settings and use provider "offline".
+suggested_hardware: t4-small
 ---
 
 # FORGE-v4 — Adversarial self-improvement for robust code generation
@@ -43,11 +43,11 @@ suggested_hardware: cpu-basic
 | **Command / security cheat sheet** | [guide.md](guide.md) |
 | **Video / slides** | YouTube demo placeholder: https://youtube.com/watch?v=YOUR_DEMO_VIDEO_ID |
 
-### Hugging Face Space (CPU-only)
+### Hugging Face Space (GPU — T4 recommended)
 
-- This repo’s **Space README** sets **`suggested_hardware: cpu-basic`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Pick CPU hardware in the Space Settings UI** if you are not on GPU.
-- **`requirements.txt`** is intentionally **light** (no PyTorch / bitsandbytes) so CPU Spaces **build and start** reliably.
-- For a **CPU-only** Space, prefer Gradio provider **`offline`** (instant deterministic baseline) or **`auto`** with **NIM / OpenRouter** keys; local **`custom_hf`** loads PyTorch and a 1.5B+LoRA stack and may **OOM or time out** on free CPU.
+- This repo’s **Space README** sets **`suggested_hardware: t4-small`** (see [Spaces config](https://huggingface.co/docs/hub/spaces-config-reference)). **Enable a T4 (or better) GPU** in the Space **Settings → Hardware** so **`custom_hf`** can load PyTorch and Hub weights on-device.
+- **`requirements.txt`** includes **`requirements-core.txt`** plus **PyTorch / `transformers` / PEFT / TRL** so **`custom_hf`** is the default path when **CUDA** is visible (real local inference, not a stub).
+- **CPU-only duplicates:** switch hardware to **CPU** in Space Settings and use Gradio provider **`offline`** or API-only keys via **`auto`** (`NIM` / `OpenRouter`); **`custom_hf`** without a GPU is not supported in this layout.
 - **Repository secrets:** names must match environment variables exactly (see table below). After adding or changing secrets, **restart the Space** (or trigger a rebuild) so the container picks them up.
 - Full training stack: install **[`requirements-train.txt`](requirements-train.txt)** on **Colab** or locally (see Quickstart).
 
@@ -56,7 +56,9 @@ suggested_hardware: cpu-basic
 | **`NIM_API_KEY`** or **`NVIDIA_API_KEY`** | NVIDIA NIM chat API (`auto` / **nim**) |
 | **`OPENROUTER_API_KEY`** | OpenRouter (`auto` / **openrouter**) |
 | **`HF_TOKEN`** or **`HUGGING_FACE_HUB_TOKEN`** | Gated Hub downloads; if set, **`auto`** may try **custom_hf** after cloud APIs |
-| **`CODE_PROVIDER_MODE`** | Default when code does not pass a provider (optional; Gradio dropdown still overrides for benchmarks) |
+| **`CODE_PROVIDER_MODE`** | Unset = auto (`custom_hf` if CUDA else `offline`); or force `custom_hf` / `offline` / `auto` / … |
+| **`FORGE_DEFAULT_PROVIDER`** | Optional: force Gradio default dropdown (`custom_hf`, `offline`, …) |
+| **`FORGE_DETERMINISTIC_RESET`** | Set to **`1`** so **`POST /reset`** re-seeds RNG (harness reproducibility); omit for varied tasks |
 
 ### OpenEnv HTTP API on the Hugging Face Space
 
@@ -87,7 +89,7 @@ curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
 
 | # | Requirement | FORGE-v4 |
 | :--: | :-- | :-- |
-| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Training extras in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
+| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements-core.txt`](requirements-core.txt) (pulled via [`requirements.txt`](requirements.txt)). Training overlap in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
 | 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
 | 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
 | 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[BLOG.md](BLOG.md)** plus **[Space Discussions](https://huggingface.co/spaces/sanjay7676/Team404_FORGE/discussions)** for an on-Hub writeup; add **public YouTube or slide URL** in the judge table when published. |
@@ -287,7 +289,7 @@ Implementation: `forge/providers/*.py`, orchestration in `forge/providers/router
 
 **Hugging Face Space:** [https://huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
 
-The Space serves **Gradio at `/`** and the same **OpenEnv-style JSON routes** (`/health`, `/reset`, `/step`, `/state`) on the same host. **`POST /reset`** reseeds Python’s RNG so eval harnesses get a **deterministic** first task each episode. For local-only API, run `api_server.py` on port `8000` (see Docker Compose).
+The Space serves **Gradio at `/`** and the same **OpenEnv-style JSON routes** (`/health`, `/reset`, `/step`, `/state`) on the same host. **`POST /reset`** starts a **new random task** by default (same live env as the UI). For strict harness reproducibility, set Space secret **`FORGE_DETERMINISTIC_RESET=1`**. For local-only API, run `api_server.py` on port `8000` (see Docker Compose).
 
 ---
 
@@ -328,8 +330,11 @@ The Space serves **Gradio at `/`** and the same **OpenEnv-style JSON routes** (`
 ## Quickstart
 
 ```bash
+# Full stack (GPU + local HF — same as HF Space default):
 pip install -r requirements.txt
-# GPU / training / HF custom local weights (skip on HF CPU Space):
+# Slim CPU-only API / Gradio (no PyTorch):
+# pip install -r requirements-core.txt
+# Optional TRL overlap / Colab extras:
 pip install -r requirements-train.txt
 
 cp .env.example .env   # then edit — do not commit .env
@@ -359,7 +364,7 @@ Anyone can `docker pull` a **public** image without logging in. `docker login` i
 
 ### Build locally, tag, and push to Docker Hub (one-time)
 
-**Fast image (default `Dockerfile`):** only `requirements.txt` — no PyTorch. Usually **a few minutes**. Good for demo, Gradio, and `CODE_PROVIDER_MODE=offline` (or API-backed providers).
+**Fast image (default `Dockerfile`):** only [`requirements-core.txt`](requirements-core.txt) — no PyTorch. Usually **a few minutes**. Good for slim demo/API with `CODE_PROVIDER_MODE=offline` (or API-backed providers).
 
 **Full training image:** [`Dockerfile.train`](Dockerfile.train) adds `requirements-train.txt` (PyTorch + CUDA wheels). Expect **tens of minutes to an hour+** on first build.
 

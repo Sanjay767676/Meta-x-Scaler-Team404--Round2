@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Slim image: Gradio + API + OpenEnv (no PyTorch). Builds in minutes — same stack as HF CPU Space.
-# For training inside Docker: docker build -f Dockerfile.train -t forge:train .
-COPY requirements.txt ./
+# Slim image: Gradio + API + OpenEnv (no PyTorch). Builds in minutes.
+# For GPU + local HF inside Docker: docker build -f Dockerfile.train -t forge:train .
+COPY requirements-core.txt ./
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements-core.txt
 
 COPY . .
 

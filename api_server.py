@@ -1,6 +1,7 @@
 # api_server.py
 # FastAPI wrapper for FORGE-v4 Environment (OpenEnv standard).
 
+import os
 import random
 from typing import Any, List, Optional
 
@@ -26,8 +27,10 @@ class Action(BaseModel):
 @app.post("/reset")
 async def reset():
     """Reset the environment and return the initial state."""
-    # Deterministic task generation for eval harnesses (same seed every episode start).
-    random.seed(GLOBAL_RANDOM_SEED)
+    # Default: varied tasks per reset (real sandbox episodes). Set FORGE_DETERMINISTIC_RESET=1
+    # to re-seed RNG for harnesses that need identical first-task distributions.
+    if os.getenv("FORGE_DETERMINISTIC_RESET", "").strip().lower() in ("1", "true", "yes"):
+        random.seed(GLOBAL_RANDOM_SEED)
     state = env.reset()
     return state
 

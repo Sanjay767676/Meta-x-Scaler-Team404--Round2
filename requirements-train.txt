@@ -1,5 +1,5 @@
-# GPU / Colab / full Docker image — install on top of requirements.txt
-# Not used on Hugging Face CPU Spaces (use CODE_PROVIDER_MODE=offline there).
+# Extra training stack — install with root requirements.txt (Spaces / Dockerfile.train).
+# Root requirements.txt already includes torch/transformers/PEFT; this file adds overlap for Colab-only flows.
 
 torch>=2.3.0
 transformers>=4.41.0
