@@ -1,6 +1,9 @@
 # FORGE-v4: Adversarial Code Generation Environment
 # Finalized requirements for CLI, Colab, and Hugging Face Spaces.
 
+# OpenEnv (official framework — Meta / HF ecosystem)
+openenv-core>=0.2.3
+
 # Core Dependencies
 tqdm>=4.66.0
 numpy>=1.26.0

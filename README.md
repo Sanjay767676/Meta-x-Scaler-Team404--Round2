@@ -23,13 +23,34 @@ pinned: false
 
 | Resource | URL |
 | :-- | :-- |
-| **Hugging Face Space (runnable demo)** | [huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE) |
+| **What judges look for (official rubric doc)** | [Google Doc — judging criteria](https://docs.google.com/document/d/1Odznuzwtb1ecDOm2t6ToZd4MuMXXfO6vWUGcxbC6mFs/edit?tab=t.0#bookmark=kix.2dz0x0nie3me) |
+| **OpenEnv + TRL (framework docs)** | [Hugging Face TRL — OpenEnv integration](https://huggingface.co/docs/trl/openenv) |
+| **Hugging Face Space (submit this URL)** | [huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE) |
 | **Source code** | [github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2) |
 | **Mini-blog (writeup)** | [MINI_BLOG.md](MINI_BLOG.md) in repo |
 | **Training Colab (author Drive)** | [Colab notebook](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing) |
 | **Training Colab (synced from GitHub)** | [FORGE_Training_Colab.ipynb on Colab](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
 | **Trained adapter** | [sanjay7676/forge-qwen-final](https://huggingface.co/sanjay7676/forge-qwen-final) |
 | **Command / security cheat sheet** | [guide.md](guide.md) |
+| **Video / slides** | *Add your public YouTube or slide-deck URL here when ready — do not upload large videos to the Space.* |
+
+### NOTE 1 — Non‑negotiable submission requirements (checklist)
+
+| # | Requirement | FORGE-v4 |
+| :--: | :-- | :-- |
+| 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Wrapper: [`env_openenv.py`](env_openenv.py) (`FORGEOpenEnvironment` subclasses `openenv.core.Environment`). Core loop remains [`env.py`](env.py) [`FORGEEnv`]. |
+| 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
+| 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
+| 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[MINI_BLOG.md](MINI_BLOG.md)** linked here; add **public YouTube or slide URL** in the table row when published. |
+| 5 | **Hugging Face Space:** discoverable & runnable | **[Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)** — **use this URL in the submission form.** |
+| 6 | **README:** motivate, explain env, show results + **link Space + all materials** | This file. |
+| 7 | **No huge video files** on Hub | Only **URLs** to external video/slides (see table). |
+
+### NOTE 2 — Submission logistics
+
+- **One submission per team** — this repo + Space is the single Team404 entry.  
+- **Submit the Hugging Face Space URL** so judges can pull the environment from it.  
+- **Post-deadline commits** may not be considered — freeze or tag a release before the deadline if organizers require it.
 
 ---
 
@@ -44,16 +65,9 @@ pinned: false
 
 ---
 
-## Minimum submission checklist (non‑negotiables)
+## Minimum submission checklist (summary)
 
-| Requirement | Status | Where |
-| :-- | :--: | :-- |
-| Build on **OpenEnv** (don’t reinvent the wheel) | **Partial / contract** | **`openenv.yaml`** + **Gym-style** `reset` / `step` / `get_state` + **FastAPI** mirror. *If organizers require the official OpenEnv Python package as a hard dependency, we can add that integration in a follow-up; the env API and manifest match the hackathon OpenEnv pattern.* |
-| **Training script** + **Colab** | Yes | **`train_unsloth.py`**, **`train_colab.py`**, **[Colab](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing)**, **[FORGE_Training_Colab.ipynb](FORGE_Training_Colab.ipynb)** |
-| **Evidence of training** (loss + reward plots, real run) | Yes | **`outputs/reward_curve.png`**, **`outputs/loss_curve.png`**, **`outputs/pass_rate.png`** (+ regenerated from `metrics/charts.py` when you re-run compare) |
-| **Short writeup** (<2 min video **or** blog **or** slides) | Blog | **[MINI_BLOG.md](MINI_BLOG.md)** — link here and in the table above; add YouTube/slides URLs in this table when available (**no large video files in the Space repo**). |
-| **HF Space** (discoverable, runnable) | Yes | **[Team404_FORGE Space](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)** |
-| **README** (motivate, explain, results + links) | Yes | You are reading it |
+Same items as **NOTE 1** above: OpenEnv dependency + wrapper, Colab + training scripts, committed plots/JSON, writeup link, runnable Space URL, README hub — all linked from the **Judge quick links** table.
 
 ---
 
@@ -69,7 +83,7 @@ FORGE-v4 is an **OpenEnv-style** environment where a **Defender** writes Python 
 | :-- | :-- |
 | **Type** | Multi-agent RL-style loop for code generation under pressure |
 | **Agents** | Defender (coder) vs Breaker (tiered adversary) |
-| **Contract** | `reset()` / `step()` / `get_state()` + `openenv.yaml` + FastAPI mirror |
+| **Contract** | `reset()` / `step()` / `get_state()` + **`openenv.yaml`** + **FastAPI** mirror + **`FORGEOpenEnvironment`** ([`env_openenv.py`](env_openenv.py)) for `openenv.core.Environment` |
 | **Training story** | Rollouts → `data/dpo_dataset.jsonl` → **SFT / DPO / GRPO** via Unsloth + TRL (`train_unsloth.py`) |
 | **Submitted weights** | LoRA adapter [`sanjay7676/forge-qwen-final`](https://huggingface.co/sanjay7676/forge-qwen-final) on base **`Qwen/Qwen2.5-Coder-1.5B-Instruct`** |
 
