@@ -286,13 +286,13 @@ python train_unsloth.py --mode dpo
 
 ## Docker / Compose
 
-Public images live on **Docker Hub** (replace `YOUR_DOCKERHUB_USERNAME` with your Docker Hub user; repository name below is `forge` — use any public repo name you pushed).
+Public image on **Docker Hub**: **`sanjay767676/forge`** (repository `forge` under user `sanjay767676`).
 
 ### Pull & run (no build — public image)
 
 ```bash
-docker pull YOUR_DOCKERHUB_USERNAME/forge:latest
-docker run -p 7860:7860 -e CODE_PROVIDER_MODE=mock YOUR_DOCKERHUB_USERNAME/forge:latest
+docker pull sanjay767676/forge:latest
+docker run -p 7860:7860 -e CODE_PROVIDER_MODE=mock sanjay767676/forge:latest
 ```
 
 Anyone can `docker pull` a **public** image without logging in. `docker login` is only needed to **push** (or to pull **private** images).
@@ -304,10 +304,10 @@ cd /path/to/FORGE
 docker build -t forge:latest .
 
 # Log in (opens browser or prompts for password / access token)
-docker login -u YOUR_DOCKERHUB_USERNAME
+docker login -u sanjay767676
 
-docker tag forge:latest YOUR_DOCKERHUB_USERNAME/forge:latest
-docker push YOUR_DOCKERHUB_USERNAME/forge:latest
+docker tag forge:latest sanjay767676/forge:latest
+docker push sanjay767676/forge:latest
 ```
 
 Use a [Docker Hub access token](https://docs.docker.com/docker-hub/access-tokens/) as the password when `docker login` asks for one.
