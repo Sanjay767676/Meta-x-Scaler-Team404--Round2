@@ -29,8 +29,8 @@ FORGE-v4 operates as a two-agent zero-sum game:
 2.  **The Adversary (Breaker)**: Discovers and escalates adversarial test cases across 4 Tiers of difficulty.
 3.  **CoachMemory**: A persistent feedback loop where the model "learns" from past failures to generate more robust solutions in subsequent episodes.
 
-## 🚀 Benchmark Results (Current Run Snapshot)
-| Metric | Baseline (Heuristic) | FORGE Model | Delta |
+## 🚀 Benchmark Results (Sample Local Run Snapshot)
+| Metric | Baseline (Heuristic) | Model Policy | Delta |
 | :--- | :--- | :--- | :--- |
 | **Avg Pass Rate** | 91.00% | 100.00% | **+9.00%** |
 | **Avg Reward** | 10.90 | 13.00 | **+2.10** |
@@ -48,7 +48,7 @@ FORGE-v4 operates as a two-agent zero-sum game:
 - **Sandbox**: Secure subprocess-based execution with resource limits.
 - **API Standard**: OpenEnv compliant (FastAPI).
 - **UI**: Gradio (Interactive Demo).
-- **Optimization**: 10x speedup via batch evaluation and caching.
+- **Optimization**: Batch candidate evaluation and caching.
 
 ## 📡 API Endpoints
 FORGE-v4 is fully programmable via its FastAPI server (`api_server.py`):

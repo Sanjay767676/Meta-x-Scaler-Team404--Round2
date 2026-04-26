@@ -25,6 +25,9 @@ models/*
 !models/.gitkeep
 outputs/*
 !outputs/.gitkeep
+!outputs/reward_curve.png
+!outputs/loss_curve.png
+!outputs/pass_rate.png
 
 # Jupyter / Colab
 .ipynb_checkpoints/
