@@ -15,6 +15,8 @@ suggested_hardware: cpu-basic
 
 # FORGE-v4 — Adversarial self-improvement for robust code generation
 
+**Theme fit (Meta OpenEnv Hackathon):** FORGE targets **Theme #1** (Defender vs Breaker multi-agent interaction), **Theme #4** (tiered adversary, CoachMemory, and rollout-driven training for self-improvement), and **Theme #3.1** (executable code, OpenEnv HTTP API, and inference tooling—professional task stress rather than shortcut self-grading).
+
 [![Live demo](https://img.shields.io/badge/Hugging_Face-Space-yellow)](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)
 [![Source](https://img.shields.io/badge/GitHub-Repository-111111)](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2)
 [![Colab (Drive)](https://img.shields.io/badge/Training-Colab-orange)](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing)
@@ -32,6 +34,7 @@ suggested_hardware: cpu-basic
 | **Hugging Face Space (submit this URL)** | [huggingface.co/spaces/sanjay7676/Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE) |
 | **Source code** | [github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2](https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2) |
 | **Blog (writeup)** | [BLOG.md](BLOG.md) in repo |
+| **Mini-blog on Hugging Face (Space Discussions)** | [Team404_FORGE → Discussions](https://huggingface.co/spaces/sanjay7676/Team404_FORGE/discussions) — post or pin a short judge-facing writeup here (full narrative also in [BLOG.md](BLOG.md)). |
 | **Training Colab (author Drive)** | [Colab notebook](https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing) |
 | **Colab model + adapter training** | https://colab.research.google.com/drive/1mKXjIX-eB2GSiebI-_n37KzVlN1NKCu8?usp=sharing |
 | **Training Colab (synced from GitHub)** | [FORGE_Training_Colab.ipynb on Colab](https://colab.research.google.com/github/Sanjay767676/Meta-x-Scaler-Team404--Round2/blob/main/FORGE_Training_Colab.ipynb) |
@@ -87,7 +90,7 @@ curl -sS -X POST "https://sanjay7676-team404-forge.hf.space/step" \
 | 1 | **OpenEnv (latest):** build on the framework | **`openenv-core>=0.2.3`** in [`requirements.txt`](requirements.txt). Training extras in [`requirements-train.txt`](requirements-train.txt). Wrapper: [`env_openenv.py`](env_openenv.py). Core: [`env.py`](env.py). |
 | 2 | **Training:** Unsloth or TRL (or other RL stack) + **Colab** | [`train_unsloth.py`](train_unsloth.py) (Unsloth + TRL), [`train_colab.py`](train_colab.py), [`FORGE_Training_Colab.ipynb`](FORGE_Training_Colab.ipynb), Colab links in the table above. |
 | 3 | **Evidence of training:** loss + reward plots (real run) | Committed: [`outputs/reward_curve.png`](outputs/reward_curve.png), [`outputs/loss_curve.png`](outputs/loss_curve.png), [`outputs/pass_rate.png`](outputs/pass_rate.png), [`outputs/final_report.json`](outputs/final_report.json). |
-| 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[BLOG.md](BLOG.md)** linked here; add **public YouTube or slide URL** in the table row when published. |
+| 4 | **Writeup / video:** mini-blog on HF *or* &lt;2 min YouTube *etc.* | **[BLOG.md](BLOG.md)** plus **[Space Discussions](https://huggingface.co/spaces/sanjay7676/Team404_FORGE/discussions)** for an on-Hub writeup; add **public YouTube or slide URL** in the judge table when published. |
 | 5 | **Hugging Face Space:** discoverable & runnable | **[Team404_FORGE](https://huggingface.co/spaces/sanjay7676/Team404_FORGE)** — **use this URL in the submission form.** |
 | 6 | **README:** motivate, explain env, show results + **link Space + all materials** | This file. |
 | 7 | **No huge video files** on Hub | Only **URLs** to external video/slides (see table). |

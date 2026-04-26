@@ -39,6 +39,7 @@ We used benchmark/compare runs to produce reward and pass-rate evidence, exporte
 
 ## Deliverables
 - Hugging Face Space: https://huggingface.co/spaces/sanjay7676/Team404_FORGE
+- Mini-blog on Hugging Face (Space Discussions — post or pin your writeup): https://huggingface.co/spaces/sanjay7676/Team404_FORGE/discussions
 - GitHub repository: https://github.com/Sanjay767676/Meta-x-Scaler-Team404--Round2
 - **Docker image (public — anyone can pull)**
   - **Docker Hub (browse tags):** https://hub.docker.com/r/sanjay767676/forge
